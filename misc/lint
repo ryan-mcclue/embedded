@@ -1,0 +1,13 @@
+#!/bin/sh
+# SPDX-License-Identifier: zlib-acknowledgement
+
+# TODO(Ryan): May have to re-add -std=gnu11 for MISRA
+pclp64_linux \
+  -i$HOME/prog/apps/pclint \
+  -i$HOME/prog/personal/tra/code \
+  -format="%f:%l:%c: %m" -summary -max_threads=$(getconf _NPROCESSORS_ONLN) \
+  $HOME/prog/apps/pclint/lnt/au-misra3.lnt \
+  co-gcc.lnt \
+  -wlib\(4\) -wlib\(1\) \
+  -e970 \
+  tem.c

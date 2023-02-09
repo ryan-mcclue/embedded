@@ -1,0 +1,80 @@
+#!/bin/sh
+# SPDX-License-Identifier: zlib-acknowledgement
+
+mkdir -p build
+
+bsp_flags="
+  -DUSE_HAL_DRIVER
+  -DSTM32F429xx
+  -IBSP/tra/Core/Inc
+  -IBSP/tra/Drivers/STM32F4xx_HAL_Driver/Inc
+  -IBSP/tra/Drivers/STM32F4xx_HAL_Driver/Src
+  -IBSP/tra/Drivers/STM32F4xx_HAL_Driver/Inc/Legacy
+  -IBSP/tra/Drivers/CMSIS/Device/ST/STM32F4xx/Include
+  -IBSP/tra/Drivers/CMSIS/Include
+  -TBSP/tra/STM32F429ZITx_FLASH.ld
+  BSP/tra/startup_stm32f429xx.s
+  BSP/tra/Core/Src/system_stm32f4xx.c
+"
+
+warning_flags="
+  -Werror -Wall -Wextra -pedantic -Warray-bounds=2
+  -Wno-unused-variable -Wno-unused-function -Wno-unused-but-set-variable
+  -Wno-unused-parameter -Wno-missing-field-initializers -Wno-write-strings
+  -Wno-unused-result
+"
+
+dev_type_flags="
+  -DTEM_INTERNAL
+  -DTEM_SLOW
+  -O0 -g -ggdb3
+"
+
+arch_flags="
+  -mcpu=cortex-m4 -mthumb -I$HOME/prog/cross/arm/include -L$HOME/prog/cross/arm/lib
+"
+
+target_flags="
+  -mfloat-abi=hard -mfpu=fpv4-sp-d16
+  --specs=nano.specs -lc -lm -lnosys
+"
+
+simulator_flags="
+  -mfloat-abi=soft
+  --specs=rdimon.specs -lc -lm -lrdimon
+"
+
+# export GCOV_PREFIX="$HOME/prog/personal/tra/build"
+# just add --coverage?
+# lcov --capture --directory project-dir --output-file coverage.info
+# -fprofile-arcs -ftest-coverage
+test_flags="
+  -DTRA_TESTING
+  $simulator_flags
+"
+
+common_flags="
+  $arch_flags $warning_flags $dev_type_flags $bsp_flags
+  -std=gnu11
+  -Icode
+  -fdata-sections -ffunction-sections -Wl,--gc-sections
+"
+
+arm-none-eabi-gcc $common_flags $target_flags \
+  code/tem.c \
+  -o build/tem.elf -lc -lm -lnosys
+test $? -ne 0 && exit 1
+
+arm-none-eabi-gcc $common_flags $simulator_flags \
+  code/tem.c \
+  -o build/simulator-tem.elf -lc -lm -lrdimon
+
+
+arm-none-eabi-objcopy -O binary build/tem.elf build/tem.bin
+arm-none-eabi-objcopy -O ihex build/tem.elf build/tem.hex
+
+arm-none-eabi-gcc $common_flags $test_flags \
+  code/tem.c \
+  tests/qemu-arm-exit.c \
+  tests/test-tem.c \
+  -o build/test-tem.elf -lc -lm -lrdimon -lcmocka-static
