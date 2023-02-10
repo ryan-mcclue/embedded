@@ -92,13 +92,13 @@ static struct cmd_client_info cmd_info = {
 }
 
 void
-console_run(void)
+console_run(MemArena *arena)
 {
   if (first_run) log_plain(PROMPT_CHAR);
   while (serial_data_available(console))
   {
     // parse command into tokens
-    // first check for wildcard
+    // first check for wildcards like '*/?/logging-off'
     // then parse on name, so 'uart' 'command_name'
 
     console_execute();
@@ -106,11 +106,26 @@ console_run(void)
   }
 }
 
+GLOBAL permanent_arena, temp;
+
 void
 main(void)
 {
+  // the 'performance' aspect of each modules is just a series of counters for various things
+  // so, > uart pm
+
+  // 512Kbytes RAM
+  permanent_memory = arena(100k);
+  temps = arena(50k * 2);
+
   log_info("Initialising console\n");
+
+  // system commands:
+  //   version, reset (return 'Starting'), help, status
+        // NVIC_SystemReset();
   
+  // all commands should return text like OK or 1 to allow for testing
+
   // create UART init, then move onto console etc.
   RETURN_CODE return_code = stm32f069_console_init();
   if (return_code != RETURN_OK)
