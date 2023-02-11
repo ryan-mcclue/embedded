@@ -1,8 +1,17 @@
 # Final Project (for employer)
-22:03
-TODO: using a gyro to add tilt/interactivity responses
+TODO: using an IMU to add tilt/interactivity responses, i.e. transform interface to component
 TODO: look at classmates project github   
-TODO: component 
+TODO: component selection using digikey
+
+unfortunately no strict commonality using an IDE or compiler make system with embedded.
+lots of projects different
+
+step-by-step debugger only possible if chip exposes SWD.
+so no feather boards?
+
+linker and map file related?
+
+open-source software with embedded, e.g. openOCD ICD
 
 (a) Use a Cortex-M processor
 (b) Have a button that causes an interrupt
@@ -144,6 +153,7 @@ SPI flash erase byte is 0xff? Can only set by sectors?
 
 
  If stuck, looking at similar open source drivers to see how they configured bus is useful
+ (adafruit, sparkfun, mbed?)
 
  what happens before main() is more interesting for embedded, as it various across each MCU.
  cortex-m defines the placement of vector tables at address 0x04 etc.

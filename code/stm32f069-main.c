@@ -1,5 +1,9 @@
 // SPDX-License-Identifier: zlib-acknowledgement
 
+
+#if 0
+// TODO: perhaps debug log include __LINE__ and __func__?
+
 //    setvbuf(stdout, NULL, _IONBF, 0); // Remove buffering on stdout.
 //  void __io_putchar(char c)
 //  {
@@ -106,6 +110,8 @@ console_run(MemArena *arena)
   }
 }
 
+#endif
+
 GLOBAL permanent_arena, temp;
 
 void
@@ -118,7 +124,9 @@ main(void)
   permanent_memory = arena(100k);
   temps = arena(50k * 2);
 
-  log_info("Initialising console\n");
+  //log_info("Initialising console\n");
+
+  // timer
 
   // system commands:
   //   version, reset (return 'Starting'), help, status
@@ -127,22 +135,22 @@ main(void)
   // all commands should return text like OK or 1 to allow for testing
 
   // create UART init, then move onto console etc.
-  RETURN_CODE return_code = stm32f069_console_init();
-  if (return_code != RETURN_OK)
-  {
-    log_error("Console init error: %d\n", return_code);
-    // saturate means clamp within bounds
-    INC_U16_SATURATE(global_error_count[INIT_ERRORS]);
-  }
+  // RETURN_CODE return_code = stm32f069_console_init();
+  // if (return_code != RETURN_OK)
+  // {
+  //   log_error("Console init error: %d\n", return_code);
+  //   // saturate means clamp within bounds
+  //   INC_U16_SATURATE(global_error_count[INIT_ERRORS]);
+  // }
 
-  stm32f069_heartbeat_led_init();
+  // stm32f069_heartbeat_led_init();
 
-  log_info("Entering superloop\n");
+  // log_info("Entering superloop\n");
 
-  while (true)
-  {
-    console_execute();
+  // while (true)
+  // {
+  //   console_execute();
 
-    temperature_sensor_execute();
-  }
+  //   temperature_sensor_execute();
+  // }
 }
