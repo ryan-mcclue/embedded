@@ -2,6 +2,9 @@
 
 set -oue pipefail
 
+    # list symbols occupying most codespace
+    arm-none-eabi-nm --print-size --size-sort --radix=d build/with-libc.elf
+
 print_metrics() {
   if [[ "$BUILD_TYPE" == "app" ]]; then
     : '

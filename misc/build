@@ -11,27 +11,10 @@ fi
 
 BUILD_TYPE="$1"
 
-bsp_flags="
-  -DUSE_HAL_DRIVER
-  -DSTM32F429xx
-  -IBSP/tra/Core/Inc
-  -IBSP/tra/Drivers/STM32F4xx_HAL_Driver/Inc
-  -IBSP/tra/Drivers/STM32F4xx_HAL_Driver/Src
-  -IBSP/tra/Drivers/STM32F4xx_HAL_Driver/Inc/Legacy
-  -IBSP/tra/Drivers/CMSIS/Device/ST/STM32F4xx/Include
-  -IBSP/tra/Drivers/CMSIS/Include
-  -TBSP/tra/STM32F429ZITx_FLASH.ld
-  BSP/tra/startup_stm32f429xx.s
-  BSP/tra/Core/Src/system_stm32f4xx.c
-"
-
-# -fprofile-arcs -ftest-coverage
-arm-none-eabi-gcc $common_flags -DTESTING \
-  code/tem.c \
-  tests/qemu-arm-exit.c \
-  tests/test-tem.c \
-  -o build/test-tem.elf -lc -lm -lrdimon -lcmocka-static
-
+error() {
+  printf "Error: %s\n" "$1" >&2
+  exit 1
+}
 
 push_dir() {
   command pushd "$@" > /dev/null
@@ -41,12 +24,25 @@ pop_dir() {
   command popd "$@" > /dev/null
 }
 
+# IMPORTANT(Ryan): Want to include bytes for initialisation values for static variables in .data section that will occupy flash
+readonly max_flash_size=$(( 16#4000 ))
+print_flash_usage() {
+  raw_size_output=$(arm-none-eabi-size $1)
+  
+  text_section_size=$(echo $raw_size_output | cut -d ' ' -f 7)
+  data_section_size=$(echo $raw_size_output | cut -d ' ' -f 8)
+  
+  flash_size=$(( $text_section_size + $data_section_size))
+  # NOTE(Ryan): Rearrange multiplication due to implicit truncation
+  flash_usage=$(( 100 * $flash_size / $max_flash_size )) 
+
+  printf "Flash usage: %d / %d (%d\%)\n" $flash_size $max_flash_size $flash_usage
+}
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
-  os="linux"
+  build_os="linux"
 else
-  printf "Error: Currently only support linux as build machine\n" >&2
-  exit 1
+  error "Currently only support linux as build machine"
 fi
 
 # NOTE(Ryan): This file is ignored by source control to allow tweaking of build params without affecting history
@@ -55,15 +51,19 @@ param_compiler=${param_compiler:-"arm-none-eabi-gcc"}
 param_mode=${param_mode:-"debug"}
 param_arch=${param_arch:-"arm"}
 param_verbose=${param_verbose:-"0"}
+param_mcu=${param_verbose:-"stm32f429z"}
 
 mkdir -p build run
 
 target_compiler_flags=()
 target_linker_flags=()
-simulator_compiler_flags=()
-simulator_linker_flags=()
+test_compiler_flags=()
+test_linker_flags=()
+# TODO(Ryan): Simulator
+# simulator_compiler_flags=()
+# simulator_linker_flags=()
 
-if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$os" == "linux" ]]; then
+if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$param_mcu" == "stm32f429z" && "$build_os" == "linux" ]]; then
 
   # IMPORTANT(Ryan): Unfortunately new errors aren't added to -Wall and -Wextra for backwards compatibility
 
@@ -84,91 +84,80 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$os
   # NOTE(Ryan): Ignored warnings
   target_compiler_flags+=( "-Wno-unknown-pragmas" "-Wno-missing-field-initializers" "-Wno-cast-align" "-Wno-useless-cast" "-Wno-comment" "-Wno-missing-declarations" )
 
-  target_compiler_flags+=( "-mcpu=cortex-m4" "-mthumb" "-I$HOME/prog/cross/arm/include" "-L$HOME/prog/cross/arm/lib" )
-
   target_compiler_flags+=( "-ffunction-sections" "-fdata-sections" )
 
   target_compiler_flags+=( "-I code" "-isystem external" )
 
-  target_linker_flags+=( "-lc" "-lm" "-Wl,--gc-sections" )
+  target_linker_flags+=( "-Wl,--gc-sections" "-lc" "-lm" )
 
-  simulator_compiler_flags=$target_compiler_flags
-  simulator_compiler_flags+=$( "-mfloat-abi=soft" "--specs=rdimon.specs" "-lrdimon" )
+  test_compiler_flags=$target_compiler_flags
+  test_linker_flags=$target_linker_flags
+  test_linker_flags+=$( "-lcmocka" )
 
-  target_compiler_flags+=$( "-lnosys" "-mfloat-abi=hard" "-mfpu=fpv4-sp-d16" "--specs=nano.specs" )
+  # TODO(Ryan): Simulator
+  # simulator_compiler_flags=$target_compiler_flags
+  # simulator_compiler_flags+=$( "-mfloat-abi=soft" "--specs=rdimon.specs" )
+  # simulator_linker_flags+=$( "-lrdimon" )
 
-# export GCOV_PREFIX="$HOME/prog/personal/tra/build"
-# just add --coverage?
-# lcov --capture --directory project-dir --output-file coverage.info
+  target_compiler_flags+=$( "-mcpu=cortex-m4" "-mthumb" "-I$HOME/prog/cross/arm/include" "-L$HOME/prog/cross/arm/lib" )
+  target_compiler_flags+=$( "-mfloat-abi=hard" "-mfpu=fpv4-sp-d16" "--specs=nano.specs" )
+  target_linker_flags+=$( "-lnosys" "-Wl,-Map=${param_mcu}-${param_mode}.map,--cref" )
 
-  # post-build get firmware size
-
-  # use for embedded, as will take into account region names specified in a linker script
-  # compiler_flags+=( "-Wl,--print-memory-usage" )
-  # -Wl,-Map=build/main.map 
-  # for embedded use -specs=nano.specs to get nano variant of newlib
-  # newlib only includes ISO C, not any POSIX etc.
-  # https://interrupt.memfault.com/blog/get-the-most-out-of-the-linker-map-file
-  # -Wl,-Map=${PROJECT_NAME}.map,--cref 
+  target_compiler_flags+=$( "" )
+# bsp_flags="
+#   -DUSE_HAL_DRIVER
+#   -DSTM32F429xx
+#   -IBSP/tra/Core/Inc
+#   -IBSP/tra/Drivers/STM32F4xx_HAL_Driver/Inc
+#   -IBSP/tra/Drivers/STM32F4xx_HAL_Driver/Src
+#   -IBSP/tra/Drivers/STM32F4xx_HAL_Driver/Inc/Legacy
+#   -IBSP/tra/Drivers/CMSIS/Device/ST/STM32F4xx/Include
+#   -IBSP/tra/Drivers/CMSIS/Include
+#   -TBSP/tra/STM32F429ZITx_FLASH.ld
+#   BSP/tra/startup_stm32f429xx.s
+#   BSP/tra/Core/Src/system_stm32f4xx.c
+# "
 
   if [[ "$param_mode" == "debug" ]]; then
-    target_compiler_flags+=( "-DMAIN_DEBUG" )
-
-    # NOTE(Ryan): -g3 gives macro definitions
-    target_compiler_flags+=( "-g3" "-gdwarf-2" "-O0" )
-
-    target_compiler_flags+=( "-Wno-unused-function" "-Wno-unused-variable"  "-Wno-unused-but-set-variable" "-Wno-unused-parameter" "-Wno-unused-result" ) 
-
-    # NOTE(Ryan): The \x part specifies any ascii character
-    # rg --no-line-number --only-matching "\[\-W[\x00-\x7F]+\]" warnings.txt | sort | uniq
-    
-    # TODO(Ryan): Also run tests for release builds
-    if [[ "$BUILD_TYPE" == "tests" ]]; then
-
-      # TODO(Ryan): run natively
-      gcc -DMAIN_TEST --coverage -lcmocka ${compiler_flags[*]} \
-        code/linux-main.cpp -o build/linux-main-test ${linker_flags[*]}
-      # NOTE(Ryan): gcov complains if overriding existing .gcda files
-      rm -f linux-main.gcda
-      # find -name '*.gcda' -exec rm {} +
-      push_dir run
-      ../build/linux-main-test
-      pop_dir
-      gcov -b -o . code/linux-main.cpp >/dev/null
-      gcovr -e ".*\.h"
-    # find . -name '*.gcov' -and -not -name 'linux-main.cpp.gcov' -exec rm {} +
-        
-    else
-      arm-none-eabi-gcc ${compiler_flags[*]} code/linux-main.cpp -o build/stm32f2323-target-debug.elf ${linker_flags[*]}
-      arm-none-eabi-objcopy -O binary build/tem.elf build/tem.bin
-      arm-none-eabi-objcopy -O ihex build/tem.elf build/tem.hex
-
-      # simulator
-      arm-none-eabi-gcc ${compiler_flags[*]} code/linux-main.cpp -o build/stm32f2323-simulator-debug.elf ${linker_flags[*]}
-
-      # IMPORTANT(Ryan): This does not show debug information
-      # Also assuming .bss negligable due to zero intialisation paradigm
-      arm-none-eabi-size build/linux-main | awk 'FNR == 2 { printf "text + data = %dkb\n", $4/1024 }'
-    fi
+    target_compiler_flags+=( "-DMAIN_DEBUG" "-g3" "-gdwarf-2" "-O0" )
+    test_compiler_flags+=( "-DMAIN_DEBUG" "-g3" "-gdwarf-2" "-O0" )
   elif [[ "$param_mode" == "release" ]]; then
-    target_compiler_flags+=( "-DMAIN_RELEASE" )
-    # TODO(Ryan): Could do -O3 instead
-    target_compiler_flags+=( "-Os" )
-
-    target_compiler_flags+=( "-ffast-math" )
-
-    target_compiler_flags+=( "-fipa-pta" )
-    
-    arm-none-eabi-gcc ${compiler_flags[*]} code/stm32f4243-main.cpp -o build/main ${linker_flags[*]}
-
+    target_compiler_flags+=( "-DMAIN_RELEASE" "-Os" "-ffast-math" "-fipa-pta" )
+    test_compiler_flags+=( "-DMAIN_RELEASE" "-Os" "-ffast-math" "-fipa-pta" )
   else
-    printf "Error: Currently only support debug and release builds\n" >&2
-    exit 1
+    error "Currently only support debug and release builds"
   fi
+
+  # TODO(Ryan): Tests
+  # if [[ "$BUILD_TYPE" == "tests" ]]; then
+      # TODO(Ryan): run natively
+      # gcc -DMAIN_TEST --coverage -lcmocka ${compiler_flags[*]} \
+      #   code/linux-main.cpp -o build/linux-main-test ${linker_flags[*]}
+      # # NOTE(Ryan): gcov complains if overriding existing .gcda files
+      # find -name '*.gcda' -exec rm -f {} +
+      # push_dir run
+      # ../build/linux-main-test
+      # pop_dir
+      # gcov -b -o . code/linux-main.cpp >/dev/null
+      # gcovr -e ".*\.h"
+    # find . -name '*.gcov' -and -not -name 'linux-main.cpp.gcov' -exec rm {} +
+  # fi
+
+  arm-none-eabi-gcc ${target_compiler_flags[*]} \
+    code/${param_mcu}-main.c -o build/${param_mcu}-target-${param_mode}.elf \
+    ${target_linker_flags[*]}
+
+  arm-none-eabi-objcopy -O binary build/${param_mcu}-target-${param_mode}.elf build/${param_mcu}-target-${param_mode}.bin
+  arm-none-eabi-objcopy -O ihex build/${param_mcu}-target-${param_mode}.elf build/${param_mcu}-target-${param_mode}.hex
+
+  # TODO(Ryan): Simulator
+  # arm-none-eabi-gcc ${compiler_flags[*]} code/linux-main.cpp -o build/stm32f2323-simulator-debug.elf ${linker_flags[*]}
+
 else
-  printf "Error: Currently only support arm arm-none-eabi-gcc on linux\n" >&2
-  exit 1
+  error "Currently only support arm arm-none-eabi-gcc stm32f429z on linux"
 fi
+
+print_flash_usage
 
 build_end_time=$(date +%s.%N)
 build_time=$( echo "($build_end_time - $build_start_time)" | bc -l )
