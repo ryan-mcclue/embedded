@@ -1,26 +1,31 @@
 #!/bin/bash
 # SPDX-License-Identifier: zlib-acknowledgement 
 
-# NOTE(Ryan): Reduce number of files to track
-jlink_commanderscript=$(mktemp /tmp/jlink-commanderscript.XXXXXXXX)
-
-# NOTE(Ryan): Flash most recent .bin file
-flash_file=$(ls -t build/*.bin | head -n1)
-
-cat << EOF > "$jlink_commanderscript"
-device STM32F429ZI 
-STM32F429ZI
+if [[ $(lsusb | grep SEGGER) ]]; then
+  # NOTE(Ryan): Reduce number of files to track
+  jlink_commanderscript=$(mktemp /tmp/jlink-commanderscript.XXXXXXXX)
+  
+  # NOTE(Ryan): Flash most recent .bin file
+  flash_file=$(ls -t build/*.bin | head -n1)
+  
+  cat << EOF > "$jlink_commanderscript"
 si 1
 speed 4000
-loadbin build/${flash_file} 0x8000000
+loadbin ${flash_file} 0x8000000
 r
 g
 qc
 EOF
+  
+  # STM32CubeIDE JLink udev rules conflict with Segger installation
+  # So, if have one installed, must use JLinkExe from CubeIDE
+  stm32cube_path="/opt/st/stm32cubeide_1.11.0/plugins/com.st.stm32cube.ide.mcu.externaltools.jlink.linux64_2.1.100.202209281145/tools/bin"
+  
+  jlink_serial_number="261012792"
+  ${stm32cube_path}/JLinkExe -Device STM32F429ZI -CommanderScript "$jlink_commanderscript" -SelectEmuBySN $jlink_serial_number -ExitOnError 1
 
-# TODO(Ryan): STM32CubeIDE JLink udev rules conflict with Segger installation
-# So, if have one installed, must use JLinkExe from CubeIDE
-
-JLinkExe -commanderscript "$jlink_commanderscript"
-
-rm -f "$jlink_commanderscript"
+  rm -f "$jlink_commanderscript"
+else
+  printf "Error: Jlink device not detected" >&2
+  exit 1
+fi

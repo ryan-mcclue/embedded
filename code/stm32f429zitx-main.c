@@ -1,12 +1,11 @@
 #include "main.h"
 
-#include "system_stm32f4xx.c"
-
 #include "stm32f4xx_hal_cortex.c"
 #include "stm32f4xx_hal_rcc.c"
 #include "stm32f4xx_hal_gpio.c"
 
-#include "stm32f4xx_hal.c"
+// NOTE(Ryan): Remove #defines to enable peripherals when required
+#include "stm32f4xx_hal_conf.h"
 
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);

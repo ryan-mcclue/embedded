@@ -100,7 +100,7 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
 
   target_compiler_flags+=( "-mcpu=cortex-m4" "-mthumb" )
   target_compiler_flags+=( "-mfloat-abi=hard" "-mfpu=fpv4-sp-d16" "--specs=nano.specs" )
-  target_linker_flags+=( "-lnosys" "-Wl,-Map=${param_mcu}-target-${param_mode}.map,--cref" )
+  target_linker_flags+=( "-lnosys" "-Wl,-Map=build/${param_mcu}-target-${param_mode}.map,--cref" )
 
   # NOTE(Ryan): BSP flags
   target_compiler_flags+=( "-DUSE_HAL_DRIVER" "-DSTM32F429xx" ) 
@@ -108,7 +108,11 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
   target_compiler_flags+=( "-isystem stm32f429zitx-bsp/Drivers/STM32F4xx_HAL_Driver/Inc/Legacy" )
   target_compiler_flags+=( "-isystem stm32f429zitx-bsp/Drivers/CMSIS/Device/ST/STM32F4xx/Include" )
   target_compiler_flags+=( "-isystem stm32f429zitx-bsp/Drivers/CMSIS/Include" )
-  target_compiler_flags+=( "code/startup_stm32f429zitx.s" "-Tcode/STM32F429ZITX_FLASH.ld" )
+  target_compiler_flags+=( "code/startup_stm32f429zitx.s" )
+  # NOTE(Ryan): Although prefer unity build, separate compilation units allows for weak symbol override
+  target_compiler_flags+=( "stm32f429zitx-bsp/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c" )
+  target_compiler_flags+=( "code/stm32f4xx_hal_msp.c" "code/stm32f4xx_it.c" "code/syscalls.c" "code/sysmem.c" "code/system_stm32f4xx.c" )
+  target_compiler_flags+=( "-Tcode/STM32F429ZITX_FLASH.ld" )
 
   if [[ "$param_mode" == "debug" ]]; then
     target_compiler_flags+=( "-DMAIN_DEBUG" "-g3" "-gdwarf-2" "-O0" )
