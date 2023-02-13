@@ -1,6 +1,8 @@
 #!/bin/bash
 
-set -oue pipefail
+# IMPORTANT(Ryan): We cannot exit on error otherwise when tests fail, build will exit prematurely
+# set -oue pipefail
+set -u
 
 build_start_time=$(date +%s.%N)
 
@@ -89,13 +91,8 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
 
   target_linker_flags+=( "-Wl,--gc-sections" "-lc" "-lm" )
 
-  # TODO(Ryan): Do a push_dir into build before compiling
-  # Then, have all include paths relative from this
-  # This to emulate 'out-of-tree' builds. 
-  # This serves us well for segmenting coverage data
-
   test_compiler_flags=("${target_compiler_flags[@]}")
-  test_compiler_flags+=( "-I tests" "--coverage" "-DMAIN_TEST" )
+  test_compiler_flags+=( "-I tests" "-DMAIN_TEST" )
   test_linker_flags=("${target_linker_flags[@]}")
   test_linker_flags+=( "-lcmocka" )
 
@@ -123,7 +120,7 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
 
   if [[ "$param_mode" == "debug" ]]; then
     target_compiler_flags+=( "-DMAIN_DEBUG" "-g3" "-gdwarf-2" "-O0" )
-    test_compiler_flags+=( "-DMAIN_DEBUG" "-g3" "-gdwarf-2" "-O0" )
+    test_compiler_flags+=( "-DMAIN_DEBUG" "-g3" "-gdwarf-2" "-O0" "--coverage" )
   elif [[ "$param_mode" == "release" ]]; then
     target_compiler_flags+=( "-DMAIN_RELEASE" "-Os" "-ffast-math" "-fipa-pta" )
     test_compiler_flags+=( "-DMAIN_RELEASE" "-Os" "-ffast-math" "-fipa-pta" )
@@ -132,25 +129,31 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
   fi
 
   if [[ "$BUILD_TYPE" == "tests" ]]; then
-    # GCOV_PREFIX
-
-    # IMPORTANT(Ryan): must be in a debug build to get meaningful coverage information
-
     # TODO(Ryan): Incorporate application code into compile
+    # NOTE(Ryan): This generates .gcno files
     gcc ${test_compiler_flags[*]} \
-      ../tests/${param_mcu}-tests.c -o ../build/${param_mcu}-tests-${param_mode} \
+      tests/${param_mcu}-tests.c -o build/${param_mcu}-tests-${param_mode} \
       ${test_linker_flags[*]}
-    # this will generate .gcno files in the root project folder
-    # /home/ryan/prog/personal/embedded/example.gcno
 
     # NOTE(Ryan): gcov complains if overriding existing .gcda files
     find -name '*.gcda' -exec rm -f {} +
+
+    # NOTE(Ryan): This generates .gcna files
     push_dir run
-      ../build/${param_mcu}-tests-${param_mode}
+      test_output=$(../build/${param_mcu}-tests-${param_mode})
+      test_success=$?
     pop_dir
 
-    # gcov -b -o . code/linux-main.cpp >/dev/null
-    # gcovr -e ".*\.h"
+    if [[ $test_success = 0 ]]; then
+      # TODO(Ryan): lcov for graphical information 
+      # NOTE(Ryan): This generates a .gcov file
+      # IMPORTANT(Ryan): This has to be the same version as gcc
+      gcov-10 -b -o . tests/${param_mcu}-tests.c >/dev/null
+
+      gcovr -e ".*\.h"
+    else
+      echo "$test_output"
+    fi
     # find . -name '*.gcov' -and -not -name 'linux-main.cpp.gcov' -exec rm {} +
   else
     arm-none-eabi-gcc ${target_compiler_flags[*]} \
