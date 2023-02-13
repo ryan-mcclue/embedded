@@ -4,11 +4,6 @@
 
 // NOTE(Ryan): Compiler specifics
 #if defined(__GNUC__)
-  #if __GNUC__ < 10
-    // no static analysis for arm-none-eabi-gcc
-    #warning GCC 10+ required for builtin static analysis
-  #endif
-
   #define COMPILER_GCC 1
 
   #if (defined(__arm__) || defined(__aarch64__)) && !defined(__gnu_linux__)
@@ -21,6 +16,7 @@
   #if defined(__arm__)
     #define ARM_32 1
     #if defined(__ARM_ARCH_7A__)
+      #define ARM_7A
     #endif
   #else
     #error Arch not supported
@@ -96,7 +92,7 @@
   #endif
   
   // NOTE(Ryan): C++/C specifics
-  #if LANG_CPP
+  #if defined(LANG_CPP)
     // NOTE(Ryan): Avoid confusing auto-indenter
     // TODO: If on windows, require dll specifier
     #define EXPORT_BEGIN extern "C" {

@@ -13,9 +13,13 @@ test_func(void **state)
   assert_int_equal(zero_func(), 0);
 }
 
+#include <stdio.h>
+
 int 
 main(void)
 {
+  printf("%s, %s\n", BUILD_VERSION, BUILD_DATE);
+
 	struct CMUnitTest tests[] = {
     cmocka_unit_test(test_func),
   };

@@ -67,6 +67,13 @@ test_linker_flags=()
 
 if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$param_mcu" == "stm32f429zitx" && "$build_os" == "linux" ]]; then
 
+  # TODO(Ryan): Derive version string from a meaningful source
+  # TODO(Ryan): Allow for spaces
+  printf -v build_date '\"%s\"' $(date '+%c(%:z%Z)' | tr ' ' '-')
+  printf -v build_version '\"0.0.1\"'
+  printf -v ram_size '100'
+  target_compiler_flags+=( "-DBUILD_VERSION=$build_version" "-DBUILD_DATE=$build_date" )
+
   # IMPORTANT(Ryan): Unfortunately new errors aren't added to -Wall and -Wextra for backwards compatibility
 
   # NOTE(Ryan): Enable various warnings largely related to implicit signed, alignment, casting, promotion issues
@@ -87,7 +94,7 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
 
   target_compiler_flags+=( "-ffunction-sections" "-fdata-sections" )
 
-  target_compiler_flags+=( "-I code"  )
+  target_compiler_flags+=( "-I code" "-I code/base" )
 
   target_linker_flags+=( "-Wl,--gc-sections" "-lc" "-lm" )
 
@@ -119,11 +126,16 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
   target_compiler_flags+=( "-Tcode/STM32F429ZITX_FLASH.ld" )
 
   if [[ "$param_mode" == "debug" ]]; then
-    target_compiler_flags+=( "-DMAIN_DEBUG" "-g3" "-gdwarf-2" "-O0" )
-    test_compiler_flags+=( "-DMAIN_DEBUG" "-g3" "-gdwarf-2" "-O0" "--coverage" )
+    common_debug_flags=( "-Wno-unused-function" "-Wno-unused-variable"  "-Wno-unused-but-set-variable" "-Wno-unused-parameter" "-Wno-unused-result" )
+    common_debug_flags+=( "-DMAIN_DEBUG" "-g3" "-gdwarf-2" "-O0" )
+    target_compiler_flags+=( "${common_debug_flags[@]}" )
+    test_compiler_flags+=( "${common_debug_flags[@]}" "--coverage" )
+
   elif [[ "$param_mode" == "release" ]]; then
-    target_compiler_flags+=( "-DMAIN_RELEASE" "-Os" "-ffast-math" "-fipa-pta" )
-    test_compiler_flags+=( "-DMAIN_RELEASE" "-Os" "-ffast-math" "-fipa-pta" )
+    common_release_flags=( "-DMAIN_RELEASE" "-Os" "-ffast-math" "-fipa-pta" )
+    target_compiler_flags+=( "${common_release_flags[@]}" ) 
+    test_compiler_flags+=( "${common_release_flags[@]}" ) 
+
   else
     error "Currently only support debug and release builds"
   fi
@@ -144,6 +156,8 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
       test_success=$?
     pop_dir
 
+    echo "$test_output"
+
     if [[ $test_success = 0 ]]; then
       # TODO(Ryan): lcov for graphical information 
       # NOTE(Ryan): This generates a .gcov file
@@ -162,8 +176,6 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
 
     arm-none-eabi-objcopy -O binary build/${param_mcu}-target-${param_mode}.elf build/${param_mcu}-target-${param_mode}.bin
     arm-none-eabi-objcopy -O ihex build/${param_mcu}-target-${param_mode}.elf build/${param_mcu}-target-${param_mode}.hex
-
-    # TODO(Ryan): overwrite version string in version.h
   fi
 
   # TODO(Ryan): Simulator

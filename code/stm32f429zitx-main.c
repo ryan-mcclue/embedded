@@ -7,6 +7,8 @@
 // NOTE(Ryan): Remove #defines to enable peripherals when required
 #include "stm32f4xx_hal_conf.h"
 
+#include "base-inc.h"
+
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 
