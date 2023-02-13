@@ -1,8 +1,0 @@
-device STM32F429ZI 
-STM32F429ZI
-si 1
-speed 4000
-loadbin build/tem.bin 0x8000000
-r
-g
-qc

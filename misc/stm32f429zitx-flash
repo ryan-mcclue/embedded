@@ -1,0 +1,26 @@
+#!/bin/bash
+# SPDX-License-Identifier: zlib-acknowledgement 
+
+# NOTE(Ryan): Reduce number of files to track
+jlink_commanderscript=$(mktemp /tmp/jlink-commanderscript.XXXXXXXX)
+
+# NOTE(Ryan): Flash most recent .bin file
+flash_file=$(ls -t build/*.bin | head -n1)
+
+cat << EOF > "$jlink_commanderscript"
+device STM32F429ZI 
+STM32F429ZI
+si 1
+speed 4000
+loadbin build/${flash_file} 0x8000000
+r
+g
+qc
+EOF
+
+# TODO(Ryan): STM32CubeIDE JLink udev rules conflict with Segger installation
+# So, if have one installed, must use JLinkExe from CubeIDE
+
+JLinkExe -commanderscript "$jlink_commanderscript"
+
+rm -f "$jlink_commanderscript"

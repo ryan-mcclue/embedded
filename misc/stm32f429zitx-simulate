@@ -1,0 +1,33 @@
+#!/bin/sh
+# SPDX-License-Identifier: zlib-acknowledgement 
+
+# IMPORTANT(Ryan): TEST_FILE_NAME is set by wrapper script run-tests
+TEST_FILE_NAME="build/test-tem.elf"
+qemu-system-gnuarmeclipse --nographic --no-reboot \
+    --board STM32F4-Discovery --mcu STM32F429ZI \
+    --semihosting-config enable=on,target=native --image "${TEST_FILE_NAME}" 
+
+# TODO(Ryan): What changes would be required to use upstream qemu for a board not directly
+# supported but just uses cortex-m4? Would a simple linker script difference be sufficient?
+# Not concerned with actual peripheral emulation....
+
+for test_binary in $(find build/ -maxdepth 1 -type f -iname "test-*"); do
+  export TEST_FILE_NAME="${test_binary}" 
+  script --quiet --command misc/run-qemu >/dev/null
+  # TODO(Ryan): Process output here to determine if error occurred and terminate
+  # grep '(qemu)' typescript
+  # cat typescript | tr -d '\r'
+  cat typescript
+done
+
+# NOTE(Ryan): QEMU variants:
+#   1. Qemu user is for linux arm binaries (defaults cortex-a)
+#    > qemu-arm -S -g 1234 build/tra
+#   2. Supports baremetal
+#    > qemu-system-arm -S -machine raspi2 -g 1234 build/tra
+#   3. Old version of qemu, however supports more stm32 boards
+#    > qemu-system-gnuarmeclipse -S -gdb tcp::1234 --nographic --no-reboot \
+#     --board STM32F4-Discovery --mcu STM32F429ZI \
+#     --semihosting-config enable=on,target=native --image "build/test-tem.elf" 
+# To Debug:
+#    > arm-none-eabi-gdb -q --nh -ex 'file build/test-tem.elf' -ex 'target remote localhost:1234'

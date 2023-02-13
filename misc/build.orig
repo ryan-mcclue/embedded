@@ -1,4 +1,0 @@
-#!/bin/bash
-# SPDX-License-Identifier: zlib-acknowledgement
-
-source "stm32f409-build"

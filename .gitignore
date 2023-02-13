@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: zlib-acknowledgement
+
+*
+
+!*/
+
+!.gitignore
+
+!code/**/*.[chs]
+!code/**/*.ld
+!code/**/*.md
+
+!stm32f429zitx-bsp/**/*
