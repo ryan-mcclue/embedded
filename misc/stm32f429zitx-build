@@ -89,7 +89,13 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
 
   target_linker_flags+=( "-Wl,--gc-sections" "-lc" "-lm" )
 
+  # TODO(Ryan): Do a push_dir into build before compiling
+  # Then, have all include paths relative from this
+  # This to emulate 'out-of-tree' builds. 
+  # This serves us well for segmenting coverage data
+
   test_compiler_flags=("${target_compiler_flags[@]}")
+  test_compiler_flags+=( "-I tests" "--coverage" "-DMAIN_TEST" )
   test_linker_flags=("${target_linker_flags[@]}")
   test_linker_flags+=( "-lcmocka" )
 
@@ -110,6 +116,7 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
   target_compiler_flags+=( "-isystem stm32f429zitx-bsp/Drivers/CMSIS/Include" )
   target_compiler_flags+=( "code/startup_stm32f429zitx.s" )
   # NOTE(Ryan): Although prefer unity build, separate compilation units allows for weak symbol override
+  # TODO(Ryan): Compile bsp files into object files and link with them to save build time
   target_compiler_flags+=( "stm32f429zitx-bsp/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c" )
   target_compiler_flags+=( "code/stm32f4xx_hal_msp.c" "code/stm32f4xx_it.c" "code/syscalls.c" "code/sysmem.c" "code/system_stm32f4xx.c" )
   target_compiler_flags+=( "-Tcode/STM32F429ZITX_FLASH.ld" )
@@ -124,29 +131,37 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
     error "Currently only support debug and release builds"
   fi
 
-  # TODO(Ryan): Tests
-  # if [[ "$BUILD_TYPE" == "tests" ]]; then
-      # TODO(Ryan): run natively
-      # gcc -DMAIN_TEST --coverage -lcmocka ${compiler_flags[*]} \
-      #   code/linux-main.cpp -o build/linux-main-test ${linker_flags[*]}
-      # # NOTE(Ryan): gcov complains if overriding existing .gcda files
-      # find -name '*.gcda' -exec rm -f {} +
-      # push_dir run
-      # ../build/linux-main-test
-      # pop_dir
-      # gcov -b -o . code/linux-main.cpp >/dev/null
-      # gcovr -e ".*\.h"
+  if [[ "$BUILD_TYPE" == "tests" ]]; then
+    # GCOV_PREFIX
+
+    # IMPORTANT(Ryan): must be in a debug build to get meaningful coverage information
+
+    # TODO(Ryan): Incorporate application code into compile
+    gcc ${test_compiler_flags[*]} \
+      ../tests/${param_mcu}-tests.c -o ../build/${param_mcu}-tests-${param_mode} \
+      ${test_linker_flags[*]}
+    # this will generate .gcno files in the root project folder
+    # /home/ryan/prog/personal/embedded/example.gcno
+
+    # NOTE(Ryan): gcov complains if overriding existing .gcda files
+    find -name '*.gcda' -exec rm -f {} +
+    push_dir run
+      ../build/${param_mcu}-tests-${param_mode}
+    pop_dir
+
+    # gcov -b -o . code/linux-main.cpp >/dev/null
+    # gcovr -e ".*\.h"
     # find . -name '*.gcov' -and -not -name 'linux-main.cpp.gcov' -exec rm {} +
-  # fi
+  else
+    arm-none-eabi-gcc ${target_compiler_flags[*]} \
+      code/${param_mcu}-main.c -o build/${param_mcu}-target-${param_mode}.elf \
+      ${target_linker_flags[*]}
 
-  arm-none-eabi-gcc ${target_compiler_flags[*]} \
-    code/${param_mcu}-main.c -o build/${param_mcu}-target-${param_mode}.elf \
-    ${target_linker_flags[*]}
+    arm-none-eabi-objcopy -O binary build/${param_mcu}-target-${param_mode}.elf build/${param_mcu}-target-${param_mode}.bin
+    arm-none-eabi-objcopy -O ihex build/${param_mcu}-target-${param_mode}.elf build/${param_mcu}-target-${param_mode}.hex
 
-  arm-none-eabi-objcopy -O binary build/${param_mcu}-target-${param_mode}.elf build/${param_mcu}-target-${param_mode}.bin
-  arm-none-eabi-objcopy -O ihex build/${param_mcu}-target-${param_mode}.elf build/${param_mcu}-target-${param_mode}.hex
-
-  # TODO(Ryan): overwrite version string in version.h
+    # TODO(Ryan): overwrite version string in version.h
+  fi
 
   # TODO(Ryan): Simulator
   # arm-none-eabi-gcc ${compiler_flags[*]} code/linux-main.cpp -o build/stm32f2323-simulator-debug.elf ${linker_flags[*]}

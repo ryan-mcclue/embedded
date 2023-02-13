@@ -6,8 +6,12 @@
 
 !.gitignore
 
+!misc/**/*
+
 !code/**/*.[chs]
 !code/**/*.ld
 !code/**/*.md
+
+!tests/**/*.[ch]
 
 !stm32f429zitx-bsp/**/*
