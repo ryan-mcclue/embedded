@@ -5,10 +5,6 @@
 // IMPORTANT(Ryan): Although using memory arenas restricts arbitrary lifetimes, this provides more benefits than negatives.
 // In majority of cases, a large number of allocations can be bucketed into same arena
 
-// IMPORTANT(Ryan): In essence, OS is ultimate garbage collector as it releases page table for us.
-// So, we generally shouldn't have to perform manual garbage collection.
-// That is, no periodic code interuptions to determine lifetimes and possibly free
-
 #include <string.h>
 #include <stdlib.h>
 
@@ -27,23 +23,20 @@
 #define GB(x) (((u64)x) << 30)
 #define TB(x) (((u64)x) << 40)
 
-#define MEM_DEFAULT_ALLOCATE_QUANTA GB(1)
-
 typedef struct MemArena MemArena;
 struct MemArena
 {
   void *memory;
-  u64 commit_pos;
-  u64 max;
-  u64 pos;
-  u64 align;
+  u32 commit_pos;
+  u32 max;
+  u32 pos;
+  u32 align;
 };
 
 INTERNAL MemArena *
-mem_arena_allocate(u64 cap)
+mem_arena_allocate(u32 cap)
 {
-  u64 rounded_size = round_to_nearest(cap, MEM_DEFAULT_ALLOCATE_QUANTA);
-  MemArena *result = (MemArena *)malloc(rounded_size);
+  MemArena *result = (MemArena *)malloc(cap);
   ERRNO_ASSERT(result != NULL);
 
   result->memory = result + sizeof(MemArena);
@@ -66,23 +59,23 @@ mem_arena_deallocate(MemArena *arena)
 #define MEM_ARENA_PUSH_STRUCT(a,T) (T*)mem_arena_push((a), sizeof(T))
 
 INTERNAL void *
-mem_arena_push_aligned(MemArena *arena, u64 size, u64 align)
+mem_arena_push_aligned(MemArena *arena, u32 size, u32 align)
 {
   void *result = NULL;
 
-  u64 clamped_align = CLAMP_BOTTOM(align, arena->align);
+  u32 clamped_align = CLAMP_BOTTOM(align, arena->align);
 
-  u64 pos = arena->pos;
+  u32 pos = arena->pos;
 
-  u64 pos_address = INT_FROM_PTR(arena) + pos;
-  u64 aligned_pos = ALIGN_POW2_UP(pos_address, clamped_align);
-  u64 alignment_size = aligned_pos - pos_address;
+  u32 pos_address = INT_FROM_PTR(arena) + pos;
+  u32 aligned_pos = ALIGN_POW2_UP(pos_address, clamped_align);
+  u32 alignment_size = aligned_pos - pos_address;
 
   if (pos + alignment_size + size <= arena->max)
   {
     u8 *mem_base = (u8 *)arena;
     result = mem_base + pos + alignment_size;
-    u64 new_pos = pos + alignment_size + size;
+    u32 new_pos = pos + alignment_size + size;
     arena->pos = new_pos;
   }
 
@@ -90,13 +83,13 @@ mem_arena_push_aligned(MemArena *arena, u64 size, u64 align)
 }
 
 INTERNAL void *
-mem_arena_push(MemArena *arena, u64 size)
+mem_arena_push(MemArena *arena, u32 size)
 {
   return mem_arena_push_aligned(arena, size, arena->align);
 }
 
 INTERNAL void *
-mem_arena_push_zero(MemArena *arena, u64 size)
+mem_arena_push_zero(MemArena *arena, u32 size)
 {
   void *memory = mem_arena_push(arena, size);
 
@@ -106,9 +99,9 @@ mem_arena_push_zero(MemArena *arena, u64 size)
 }
 
 INTERNAL void
-mem_arena_set_pos_back(MemArena *arena, u64 pos)
+mem_arena_set_pos_back(MemArena *arena, u32 pos)
 {
-  u64 clamped_pos = CLAMP_BOTTOM(sizeof(*arena), pos);
+  u32 clamped_pos = CLAMP_BOTTOM(sizeof(*arena), pos);
 
   if (arena->pos > clamped_pos)
   {
@@ -117,7 +110,7 @@ mem_arena_set_pos_back(MemArena *arena, u64 pos)
 }
 
 INTERNAL void
-mem_arena_pop(MemArena *arena, u64 size)
+mem_arena_pop(MemArena *arena, u32 size)
 {
   mem_arena_set_pos_back(arena, arena->pos - size);
 }
@@ -129,81 +122,50 @@ mem_arena_clear(MemArena *arena)
 }
 
 
-typedef struct ThreadContext ThreadContext;
-struct ThreadContext
+typedef struct TempMemArenas TempMemArenas;
+struct TempMemArenas
 {
   MemArena *arenas[2];  
-  const char *file_name;
-  u64 line_number;
 };
 
-THREAD_LOCAL ThreadContext *tl_thread_context = NULL;
+GLOBAL TempMemArenas global_temp_mem_arenas = ZERO_STRUCT;
 
-INTERNAL ThreadContext
-thread_context_create(void)
+INTERNAL void
+initialise_global_temp_mem_arenas(u32 cap)
 {
-  ThreadContext result = ZERO_STRUCT;
-
-  for (u32 arena_i = 0; arena_i < ARRAY_COUNT(result.arenas); ++arena_i)
+  for (u32 arena_i = 0; arena_i < ARRAY_COUNT(global_temp_mem_arenas.arenas); ++arena_i)
   {
-    result.arenas[arena_i] = mem_arena_allocate(GB(8));
+    global_temp_mem_arenas.arenas[arena_i] = mem_arena_allocate(cap);
   }
-
-  return result;
 }
 
-INTERNAL void
-thread_context_set(ThreadContext *tcx)
-{
-  // TODO(Ryan): How exactly does this work multithreaded?
-  // metadesk multithreaded not same way
-  tl_thread_context = tcx;
-}
-
-INTERNAL ThreadContext *
-thread_context_get(void)
-{
-  return tl_thread_context; 
-}
-
-#define THREAD_CONTEXT_REGISTER_FILE_AND_LINE \
-  __thread_context_register_file_and_line(__FILE__, __LINE__)
-INTERNAL void
-__thread_context_register_file_and_line(char *file, int line)
-{
-  ThreadContext *tctx = thread_context_get();
-  tctx->file_name = file;
-  tctx->line_number = (u64)line;
-}
-
-typedef struct MemArenaTemp MemArenaTemp;
-struct MemArenaTemp
+typedef struct TempMemArena TempMemArena;
+struct TempMemArena
 {
   MemArena *arena;
-  u64 pos;
+  u32 pos;
 };
 
-INTERNAL MemArenaTemp
-mem_arena_scratch_get(MemArena **conflicts, u64 conflict_count)
+INTERNAL TempMemArena
+temp_mem_arena_get(MemArena **conflicts, u32 conflict_count)
 {
-  MemArenaTemp scratch = ZERO_STRUCT;
-  ThreadContext *tctx = thread_context_get();
+  TempMemArena scratch = ZERO_STRUCT;
 
-  for (u64 tctx_idx = 0; tctx_idx < ARRAY_COUNT(tctx->arenas); tctx_idx += 1)
+  for (u32 temp_idx = 0; temp_idx < ARRAY_COUNT(global_temp_mem_arenas.arenas); temp_idx += 1)
   {
-    b32 is_conflicting = 0;
+    b32 is_conflicting = false;
     for (MemArena **conflict = conflicts; conflict < conflicts+conflict_count; conflict += 1)
     {
-      if (*conflict == tctx->arenas[tctx_idx])
+      if (*conflict == global_temp_mem_arenas.arenas[temp_idx])
       {
-        is_conflicting = 1;
+        is_conflicting = true;
         break;
       }
     }
 
-    if (is_conflicting == 0)
+    if (!is_conflicting)
     {
-      scratch.arena = tctx->arenas[tctx_idx];
+      scratch.arena = global_temp_mem_arenas.arenas[temp_idx];
       scratch.pos = scratch.arena->pos;
       break;
     }
@@ -213,7 +175,7 @@ mem_arena_scratch_get(MemArena **conflicts, u64 conflict_count)
 }
 
 INTERNAL void
-mem_arena_scratch_release(MemArenaTemp temp)
+tep_mem_arena_release(TempMemArena temp)
 {
   mem_arena_set_pos_back(temp.arena, temp.pos);
 }

@@ -4,7 +4,6 @@
 
 // TODO(Ryan): Investigate using gcc extensions for safer macros.
 // Do they add any overhead?
-
 #include <stdint.h>
 typedef int8_t i8;
 typedef int16_t  i16;
@@ -22,6 +21,8 @@ typedef uint32_t  u32;
 typedef uint64_t  u64;
 typedef float f32;
 typedef double f64;
+
+#include <stdbool.h>
 
 #define GLOBAL static
 #define LOCAL static
@@ -266,7 +267,7 @@ INTERNAL void __bp(void) {}
 
 #define ARRAY_COUNT(a) (sizeof(a) / sizeof(a[0]))
 
-#define INT_FROM_PTR(p) ((unsigned long long)((char *)p - (char *)0))
+#define INT_FROM_PTR(p) ((unsigned long)((char *)p - (char *)0))
 #define PTR_FROM_INT(n) ((void *)((char *)0 + (n)))
 
 #define ABSTRACT_MEMBER(s, member) (((s *)0)->member)

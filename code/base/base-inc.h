@@ -10,7 +10,7 @@
 
 #include "base-context.h"
 #include "base-types.h"
-//#include "base-memory.h"
+#include "base-memory.h"
 //#include "base-math.h"
 //#include "base-string.h"
 //#include "base-map.h"

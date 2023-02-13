@@ -27,7 +27,7 @@ pop_dir() {
 }
 
 # IMPORTANT(Ryan): Want to include bytes for initialisation values for static variables in .data section that will occupy flash
-readonly max_flash_size=$(( 2 << 20 ))
+readonly max_flash_size=$(( 2048 << 10 ))
 print_flash_usage() {
   raw_size_output=$(arm-none-eabi-size $1)
   
@@ -71,8 +71,8 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
   # TODO(Ryan): Allow for spaces
   printf -v build_date '\"%s\"' $(date '+%c(%:z%Z)' | tr ' ' '-')
   printf -v build_version '\"0.0.1\"'
-  printf -v ram_size '100'
-  target_compiler_flags+=( "-DBUILD_VERSION=$build_version" "-DBUILD_DATE=$build_date" )
+  printf -v ram_size '%d' $(( 192 << 10 ))
+  target_compiler_flags+=( "-DBUILD_VERSION_STR=$build_version" "-DBUILD_DATE_STR=$build_date" "-DRAM_SIZE_INT=$ram_size" )
 
   # IMPORTANT(Ryan): Unfortunately new errors aren't added to -Wall and -Wextra for backwards compatibility
 

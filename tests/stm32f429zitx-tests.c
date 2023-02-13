@@ -18,7 +18,7 @@ test_func(void **state)
 int 
 main(void)
 {
-  printf("%s, %s\n", BUILD_VERSION, BUILD_DATE);
+  printf("%s, %s, %d\n", BUILD_VERSION_STR, BUILD_DATE_STR, RAM_SIZE_INT);
 
 	struct CMUnitTest tests[] = {
     cmocka_unit_test(test_func),
