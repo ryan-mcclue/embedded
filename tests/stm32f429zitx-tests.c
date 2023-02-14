@@ -32,8 +32,8 @@ extern int testable_main(void);
 INTERNAL void
 test_main_expected_to_initialise_hal_and_system_clock(void **state)
 {
-  expect_function_call(HAL_Init);
-  //expect_function_call(SystemClock_Config);
+  expect_function_call(__wrap_HAL_Init);
+  expect_function_call(__wrap_SystemClock_Config);
 
   assert_int_equal(testable_main(), 0);
 }
@@ -43,8 +43,6 @@ test_main_expected_to_initialise_hal_and_system_clock(void **state)
 //INTERNAL void
 //test_main_expected_to_initialise_permanent_and_temp_memory_arenas(void **state)
 //{
-//  // TODO(Ryan): Might have to replace this with __warp variant
-//  
 //  // don't care what arguments passed in
 //
 //  // how to pass in a pointer here?

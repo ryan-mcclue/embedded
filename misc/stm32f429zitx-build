@@ -125,12 +125,12 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
   # Furthermore, allows for simpler usage when creating mocks to run tests natively
   # In addition, required for --wrap to work
   # TODO(Ryan): Compile bsp files into object files and link with them to save build time
-
-  target_compiler_flags+=( "code/startup_stm32f429zitx.s" )
-  target_compiler_flags+=( "code/stm32f4xx_hal_msp.c" "code/stm32f4xx_it.c" "code/syscalls.c" "code/sysmem.c" "code/system_stm32f4xx.c" )
   target_compiler_flags+=( "${hal_path}/Src/stm32f4xx_hal.c" )
   target_compiler_flags+=( "${hal_path}/Src/stm32f4xx_hal_cortex.c" "${hal_path}/Src/stm32f4xx_hal_rcc.c" )
   target_compiler_flags+=( "${hal_path}/Src/stm32f4xx_hal_gpio.c" )
+  target_compiler_flags+=( "code/startup_stm32f429zitx.s" )
+  target_compiler_flags+=( "code/stm32f4xx_hal_msp.c" "code/stm32f4xx_it.c" "code/syscalls.c" "code/sysmem.c" "code/system_stm32f4xx.c" )
+  target_compiler_flags+=( "code/boot.c" )
   target_linker_flags+=( "-Tcode/STM32F429ZITX_FLASH.ld" )
 
   if [[ "$param_mode" == "debug" ]]; then
