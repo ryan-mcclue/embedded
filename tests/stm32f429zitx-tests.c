@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: zlib-acknowledgement
 
+#include "stm32f429zitx-main.c"
+
 #include "test-inc.h"
-#include "base-inc.h"
 
 #include <stdio.h>
 // A 'spike' is explorative code. Best to put in a separate branch.
@@ -26,8 +27,6 @@ void __wrap_SystemClock_Config(void)
 {
   function_called();
 }
-
-extern int testable_main(void);
 
 INTERNAL void
 test_main_expected_to_initialise_hal_and_system_clock(void **state)

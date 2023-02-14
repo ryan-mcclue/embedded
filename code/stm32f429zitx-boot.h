@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: zlib-acknowledgement
 
-// IMPORTANT(Ryan): Put these in every file
-// Strange circular includes in st drivers otherwise
-#include "stm32f4xx.h"
-#include "stm32f4xx_hal.h"
+#if !defined(BOOT_H)
+#define BOOT_H
 
-#include "boot.h"
+void SystemClock_Config(void);
+void Error_Handler(void);
 
+#if !defined(TEST_BUILD)
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
@@ -57,4 +57,6 @@ void SystemClock_Config(void)
     Error_Handler();
   }
 }
+#endif
 
+#endif
