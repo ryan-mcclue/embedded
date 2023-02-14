@@ -30,7 +30,7 @@ typedef double f64;
 #define GLOBAL_CONST PROGMEM
 
 #if defined(TEST_BUILD)
-  GLOBAL u32 global_forever_counter = 5;
+  GLOBAL u32 global_forever_counter = 1;
   #define FOREVER (global_forever_counter--) 
 #else
   #define FOREVER 1

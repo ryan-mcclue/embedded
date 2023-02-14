@@ -5,34 +5,64 @@
 
 extern int testable_main(void);
 
+// A 'spike' is explorative code. Best to put in a separate branch.
+// Main loop in executor function that returns true (so we can sleep or reset) 
+
+// in test set-up you configure mocks to return particular values
+// we are concerned with function calls, e.g. when x() is called and returns y I expect z() to be called
+// mocks are required to maintain isolation with integration tests?
+//
+// gcc --Wl,--wrap=func; now have __wrap_func() and __real_func()
+
+// boundary testing is putting in small, large numbers etc.
+// system tests (automated or manual) is used to catch bugs (other testing is to prevent them).
+// in essence, verify requirements are met in reality
+
+void __wrap_HAL_Init(void)
+{
+  function_called();
+}
+
+void __wrap_SystemClock_Config(void)
+{
+  function_called();
+}
+
 INTERNAL void
-test_main_should_initialise_permanent_and_temp_memory_arenas(void **state)
+test_main_expected_to_initialise_hal_and_system_clock(void **state)
 {
-  return;
-  // TODO(Ryan):  
+  expect_function_call(HAL_Init, 1);
+  expect_function_call(SystemClock_Config, 1);
+
+  assert_int_equal(testable_main(), 0);
 }
 
-
-int zero_func(void)
-{
-  return 0;
-}
-
-void
-test_func(void **state)
-{
-  assert_int_equal(zero_func(), 0);
-}
+// expected nomenclature for integration
+// should nomenclature for unit
+//INTERNAL void
+//test_main_expected_to_initialise_permanent_and_temp_memory_arenas(void **state)
+//{
+//  // TODO(Ryan): Might have to replace this with __warp variant
+//  
+//  // don't care what arguments passed in
+//
+//  // how to pass in a pointer here?
+//  // will_return(mem_arena_allocate, );
+//
+//  expect_function_call(mem_arena_allocate, 1);
+//  expect_function_call(initialise_global_temp_mem_arenas, 1);
+//
+//  return;
+//  // TODO(Ryan):  
+//}
 
 #include <stdio.h>
 
 int 
 main(void)
 {
-  printf("%s, %s, %d\n", BUILD_VERSION_STR, BUILD_DATE_STR, RAM_SIZE_INT);
-
 	struct CMUnitTest tests[] = {
-    cmocka_unit_test(test_func),
+    cmocka_unit_test(test_main_expected_to_initialise_hal_and_system_clock),
   };
 
   int cmocka_res = cmocka_run_group_tests(tests, NULL, NULL);

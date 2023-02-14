@@ -22,8 +22,8 @@ int main(void)
 
   SystemClock_Config();
 
-  MemArena *permanent_arena = mem_arena_allocate(KB(32));
-  initialise_global_temp_mem_arenas(KB(32));
+  //MemArena *permanent_arena = mem_arena_allocate(KB(32));
+  // initialise_global_temp_mem_arenas(KB(32));
 
   // MemArenaTemp temp_arena = mem_arena_temp_get(NULL, 0);
 
@@ -32,6 +32,8 @@ int main(void)
   {
 
   }
+
+  return 0;
 }
 
 void SystemClock_Config(void)

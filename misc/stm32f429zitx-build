@@ -157,6 +157,9 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
 
     # TODO(Ryan): Incorporate application code into compile
     # NOTE(Ryan): This generates .gcno files
+    
+    test_linker_flags+=( "-Wl,--wrap=HAL_Init" "-Wl,--wrap=SystemClock_Config" )
+
     gcc ${test_compiler_flags[*]} \
       tests/${param_mcu}-tests.c -o build/${param_mcu}-tests-${param_mode} \
       ${test_linker_flags[*]}

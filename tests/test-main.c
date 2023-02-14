@@ -7,18 +7,7 @@
 #include <limits.h>
 #include <cmocka.h>
 
-// peripherals.h with #define USB_TX 12 (pin names?)
-
 extern int testable_main(void);
-
-// unit tests/state-based testing for data structures, math, state machines, i.e. edge of project
-// boundary testing is putting in small, large numbers etc.
-// unit tests for driver files only required if not using tested BSP (just set/read register structs)
-
-// mocking allows for interaction-based testing
-
-// system tests (automated or manual) is used to catch bugs (other testing is to prevent them).
-// in essence, verify requirements are met in reality
 
 void
 test_tem(void **state)
@@ -88,7 +77,8 @@ test_with_mock(void **state)
 // --wrap=open will redirect to __wrap_open
 
 // may require specifying the weak attribute on source functions to be mocked 
-// this allows redefinition of the symbol inside same translation unit due to unity build (perhaps good to put this in a macro for testing builds only?)
+// this allows redefinition of the symbol inside same translation unit due to unity build 
+// (perhaps good to put this in a macro for testing builds only?)
 
 void
 __wrap_led_init(void)
