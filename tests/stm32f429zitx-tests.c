@@ -1,6 +1,17 @@
 // SPDX-License-Identifier: zlib-acknowledgement
 
 #include "test-inc.h"
+#include "base-inc.h"
+
+extern int testable_main(void);
+
+INTERNAL void
+test_main_should_initialise_permanent_and_temp_memory_arenas(void **state)
+{
+  return;
+  // TODO(Ryan):  
+}
+
 
 int zero_func(void)
 {

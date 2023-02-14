@@ -8,8 +8,10 @@
 
   #if (defined(__arm__) || defined(__aarch64__)) && !defined(__gnu_linux__)
     #define OS_ARM_EABI 1
+  #elif defined(__gnu_linux__)
+    #define OS_LINUX 1
   #else
-    #error 
+    #error Target OS not supported 
   #endif
 
   // NOTE(Ryan): Architecture determination
@@ -18,6 +20,8 @@
     #if defined(__ARM_ARCH_7A__)
       #define ARM_7A
     #endif
+  #elif defined(__x86_64__)
+    #define ARCH_X86_64 1
   #else
     #error Arch not supported
   #endif

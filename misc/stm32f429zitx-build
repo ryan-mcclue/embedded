@@ -99,7 +99,7 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
   target_linker_flags+=( "-Wl,--gc-sections" "-lc" "-lm" )
 
   test_compiler_flags=("${target_compiler_flags[@]}")
-  test_compiler_flags+=( "-I tests" "-DMAIN_TEST" )
+  test_compiler_flags+=( "-Wno-padded" "-I tests" "-DTEST_BUILD" )
   test_linker_flags=("${target_linker_flags[@]}")
   test_linker_flags+=( "-lcmocka" )
 
@@ -127,12 +127,12 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
 
   if [[ "$param_mode" == "debug" ]]; then
     common_debug_flags=( "-Wno-unused-function" "-Wno-unused-variable"  "-Wno-unused-but-set-variable" "-Wno-unused-parameter" "-Wno-unused-result" )
-    common_debug_flags+=( "-DMAIN_DEBUG" "-g3" "-gdwarf-2" "-O0" )
+    common_debug_flags+=( "-DDEBUG_BUILD" "-g3" "-gdwarf-2" "-O0" )
     target_compiler_flags+=( "${common_debug_flags[@]}" )
     test_compiler_flags+=( "${common_debug_flags[@]}" "--coverage" )
 
   elif [[ "$param_mode" == "release" ]]; then
-    common_release_flags=( "-DMAIN_RELEASE" "-Os" "-ffast-math" "-fipa-pta" )
+    common_release_flags=( "-DRELEASE_BUILD" "-Os" "-ffast-math" "-fipa-pta" )
     target_compiler_flags+=( "${common_release_flags[@]}" ) 
     test_compiler_flags+=( "${common_release_flags[@]}" ) 
 
@@ -152,9 +152,8 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
     # sudo docker cp container-id:/path/filename.txt /tmp/
 
     # chmod -R 777 file
-    # chown -R ryan:users file
+    # chown -R ryan:ryan file
     # mv file /home/ryan/prog/personal/learn/unit2
-
 
     # TODO(Ryan): Incorporate application code into compile
     # NOTE(Ryan): This generates .gcno files
@@ -170,8 +169,6 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
       test_output=$(../build/${param_mcu}-tests-${param_mode})
       test_success=$?
     pop_dir
-
-    echo "$test_output"
 
     if [[ $test_success = 0 ]]; then
       # TODO(Ryan): lcov for graphical information 

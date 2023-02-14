@@ -29,6 +29,13 @@ typedef double f64;
 #define INTERNAL static
 #define GLOBAL_CONST PROGMEM
 
+#if defined(TEST_BUILD)
+  GLOBAL u32 global_forever_counter = 5;
+  #define FOREVER (global_forever_counter--) 
+#else
+  #define FOREVER 1
+#endif
+
 // TODO(Ryan): Seems use global variables for constants, macros for functions? we get added type safety and can get pointer to them
 // we know that any compile time constants will save RAM. compiler optimisation should save codespace also
 // IMPORTANT(Ryan): C99 diverged from C++ C, so as these defined in C99, perhaps not in C++
@@ -156,15 +163,15 @@ abs_f64(f64 x)
   return *(f64 *)(&temp);
 }
 
-typedef struct SourceLocation SourceLocation;
-struct SourceLocation
+typedef struct SourceLoc SourceLoc;
+struct SourceLoc
 {
   const char *file_name;
   const char *function_name;
   u64 line_number;
 };
-#define SOURCE_LOCATION { __FILE__, __func__, __LINE__ }
-#define LITERAL_SOURCE_LOCATION LITERAL(SourceLocation) SOURCE_LOCATION 
+#define SOURCE_LOC { __FILE__, __func__, __LINE__ }
+#define LITERAL_SOURCE_LOC LITERAL(SourceLoc) SOURCE_LOC 
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -267,7 +274,7 @@ INTERNAL void __bp(void) {}
 
 #define ARRAY_COUNT(a) (sizeof(a) / sizeof(a[0]))
 
-#define INT_FROM_PTR(p) ((unsigned long)((char *)p - (char *)0))
+#define INT_FROM_PTR(p) ((u32)((char *)p - (char *)0))
 #define PTR_FROM_INT(n) ((void *)((char *)0 + (n)))
 
 #define ABSTRACT_MEMBER(s, member) (((s *)0)->member)

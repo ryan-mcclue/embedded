@@ -12,7 +12,11 @@
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 
+#if defined(TEST_BUILD)
+int testable_main(void)
+#else
 int main(void)
+#endif
 {
   HAL_Init();
 
@@ -24,7 +28,7 @@ int main(void)
   // MemArenaTemp temp_arena = mem_arena_temp_get(NULL, 0);
 
   MX_GPIO_Init();
-  while (1)
+  while (FOREVER)
   {
 
   }
