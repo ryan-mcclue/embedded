@@ -44,7 +44,7 @@
 /*
  * GNU Compiler
  */
-#elif defined ( __GNUC__ )
+#elif defined (__GNUC__)
   #include "cmsis_gcc.h"
 
 

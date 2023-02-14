@@ -98,8 +98,15 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
 
   target_linker_flags+=( "-Wl,--gc-sections" "-lc" "-lm" )
 
+  # NOTE(Ryan): BSP includes
+  hal_path="stm32f429zitx-bsp/Drivers/STM32F4xx_HAL_Driver"
+  target_compiler_flags+=( "-DUSE_HAL_DRIVER" "-DSTM32F429xx" ) 
+  target_compiler_flags+=( "-isystem ${hal_path}/Inc" "-isystem ${hal_path}/Inc/Legacy" )
+  target_compiler_flags+=( "-isystem stm32f429zitx-bsp/Drivers/CMSIS/Device/ST/STM32F4xx/Include" )
+  target_compiler_flags+=( "-isystem stm32f429zitx-bsp/Drivers/CMSIS/Include" )
+
   test_compiler_flags=("${target_compiler_flags[@]}")
-  test_compiler_flags+=( "-Wno-padded" "-I tests" "-DTEST_BUILD" )
+  test_compiler_flags+=( "-Wno-padded" "-Wno-conversion" "-I tests" "-DTEST_BUILD" )
   test_linker_flags=("${target_linker_flags[@]}")
   test_linker_flags+=( "-lcmocka" )
 
@@ -112,18 +119,16 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
   target_compiler_flags+=( "-mfloat-abi=hard" "-mfpu=fpv4-sp-d16" "--specs=nano.specs" )
   target_linker_flags+=( "-lnosys" "-Wl,-Map=build/${param_mcu}-target-${param_mode}.map,--cref" )
 
-  # NOTE(Ryan): BSP flags
-  target_compiler_flags+=( "-DUSE_HAL_DRIVER" "-DSTM32F429xx" ) 
-  target_compiler_flags+=( "-isystem stm32f429zitx-bsp/Drivers/STM32F4xx_HAL_Driver/Inc" "-isystem stm32f429zitx-bsp/Drivers/STM32F4xx_HAL_Driver/Src" )
-  target_compiler_flags+=( "-isystem stm32f429zitx-bsp/Drivers/STM32F4xx_HAL_Driver/Inc/Legacy" )
-  target_compiler_flags+=( "-isystem stm32f429zitx-bsp/Drivers/CMSIS/Device/ST/STM32F4xx/Include" )
-  target_compiler_flags+=( "-isystem stm32f429zitx-bsp/Drivers/CMSIS/Include" )
-  target_compiler_flags+=( "code/startup_stm32f429zitx.s" )
-  # NOTE(Ryan): Although prefer unity build, separate compilation units allows for weak symbol override
+  # NOTE(Ryan): BSP files
+  # NOTE(Ryan): Although prefer faster unity build, separate compilation units allows for weak symbol override common in BSPs
+  # Furthermore, allows for simpler usage when creating mocks to run tests natively
   # TODO(Ryan): Compile bsp files into object files and link with them to save build time
-  target_compiler_flags+=( "stm32f429zitx-bsp/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c" )
+  target_compiler_flags+=( "code/startup_stm32f429zitx.s" )
   target_compiler_flags+=( "code/stm32f4xx_hal_msp.c" "code/stm32f4xx_it.c" "code/syscalls.c" "code/sysmem.c" "code/system_stm32f4xx.c" )
-  target_compiler_flags+=( "-Tcode/STM32F429ZITX_FLASH.ld" )
+  target_compiler_flags+=( "${hal_path}/Src/stm32f4xx_hal.c" )
+  target_compiler_flags+=( "${hal_path}/Src/stm32f4xx_hal_cortex.c" "${hal_path}/Src/stm32f4xx_hal_rcc.c" )
+  target_compiler_flags+=( "${hal_path}/Src/stm32f4xx_hal_gpio.c" )
+  target_linker_flags+=( "-Tcode/STM32F429ZITX_FLASH.ld" )
 
   if [[ "$param_mode" == "debug" ]]; then
     common_debug_flags=( "-Wno-unused-function" "-Wno-unused-variable"  "-Wno-unused-but-set-variable" "-Wno-unused-parameter" "-Wno-unused-result" )

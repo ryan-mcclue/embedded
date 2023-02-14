@@ -1,9 +1,5 @@
 #include "main.h"
 
-#include "stm32f4xx_hal_cortex.c"
-#include "stm32f4xx_hal_rcc.c"
-#include "stm32f4xx_hal_gpio.c"
-
 // NOTE(Ryan): Remove #defines to enable peripherals when required
 #include "stm32f4xx_hal_conf.h"
 
@@ -27,7 +23,7 @@ int main(void)
 
   // MemArenaTemp temp_arena = mem_arena_temp_get(NULL, 0);
 
-  MX_GPIO_Init();
+  // MX_GPIO_Init();
   while (FOREVER)
   {
 
