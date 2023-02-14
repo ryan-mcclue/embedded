@@ -140,7 +140,22 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
     error "Currently only support debug and release builds"
   fi
 
+  # TODO(Ryan): Don't run coverage if in a release build
   if [[ "$BUILD_TYPE" == "tests" ]]; then
+
+    # TODO(Ryan): Mock setup
+    # determine container-id from running container and $(docker container ls)
+    # sudo -i
+
+    # has to be to /tmp/ for snap reasons ...
+    # will go inside of /tmp/snap-private-tmp/...
+    # sudo docker cp container-id:/path/filename.txt /tmp/
+
+    # chmod -R 777 file
+    # chown -R ryan:users file
+    # mv file /home/ryan/prog/personal/learn/unit2
+
+
     # TODO(Ryan): Incorporate application code into compile
     # NOTE(Ryan): This generates .gcno files
     gcc ${test_compiler_flags[*]} \
