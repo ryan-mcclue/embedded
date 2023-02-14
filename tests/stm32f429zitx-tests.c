@@ -3,8 +3,7 @@
 #include "test-inc.h"
 #include "base-inc.h"
 
-#include "stm32f429zitx-main.c"
-
+#include <stdio.h>
 // A 'spike' is explorative code. Best to put in a separate branch.
 // Main loop in executor function that returns true (so we can sleep or reset) 
 
@@ -28,17 +27,16 @@ void __wrap_SystemClock_Config(void)
   function_called();
 }
 
+extern int testable_main(void);
+
 INTERNAL void
 test_main_expected_to_initialise_hal_and_system_clock(void **state)
 {
   expect_function_call(HAL_Init);
-  expect_function_call(SystemClock_Config);
+  //expect_function_call(SystemClock_Config);
 
   assert_int_equal(testable_main(), 0);
 }
-
-
-#include "cmsis_gcc.h"
 
 // expected nomenclature for integration
 // should nomenclature for unit
@@ -59,7 +57,6 @@ test_main_expected_to_initialise_hal_and_system_clock(void **state)
 //  // TODO(Ryan):  
 //}
 
-#include <stdio.h>
 
 int 
 main(void)

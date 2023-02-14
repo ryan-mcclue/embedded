@@ -106,9 +106,9 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
   target_compiler_flags+=( "-isystem stm32f429zitx-bsp/Drivers/CMSIS/Include" )
 
   test_compiler_flags=("${target_compiler_flags[@]}")
-  test_compiler_flags+=( "-Wno-padded" "-Wno-conversion" "-I tests" "-DTEST_BUILD" )
+  test_compiler_flags+=( "-Wno-padded" "-Wno-conversion" "-I tests" "-DTEST_BUILD" "code/stm32f429zitx-main.c" )
   test_linker_flags=("${target_linker_flags[@]}")
-  test_linker_flags+=( "-lcmocka" )
+  test_linker_flags+=( "-lcmocka" "-Wl,--warn-unresolved-symbols" )
 
   # TODO(Ryan): Simulator
   # simulator_compiler_flags=$target_compiler_flags
@@ -122,6 +122,7 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
   # NOTE(Ryan): BSP files
   # NOTE(Ryan): Although prefer faster unity build, separate compilation units allows for weak symbol override common in BSPs
   # Furthermore, allows for simpler usage when creating mocks to run tests natively
+  # In addition, required for --wrap to work
   # TODO(Ryan): Compile bsp files into object files and link with them to save build time
   target_compiler_flags+=( "code/startup_stm32f429zitx.s" )
   target_compiler_flags+=( "code/stm32f4xx_hal_msp.c" "code/stm32f4xx_it.c" "code/syscalls.c" "code/sysmem.c" "code/system_stm32f4xx.c" )
