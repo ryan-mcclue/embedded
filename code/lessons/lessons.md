@@ -2,7 +2,17 @@
 YOU WANT TO TALK ABOUT THIS IN AN INTERVIEW
 TODO: using an IMU to add tilt/interactivity responses, i.e. transform interface to component
 TODO: look at classmates project github   
-TODO: component selection using digikey, mouser etc. (if in car require wide temperature ranges, if outerspace require radiation hardening)
+TODO: (if in car require wide temperature ranges, if outerspace require radiation hardening)
+
+MCU selection using microchip/maps
+"I need the cheapest part I can get, for multiple 10K unit production runs with one SPI bus, one I2S  bus, DMA channels and a handful of GPIOs 
+with at least one ADC input. QSPI / SDIO is a nice to have, but I can get by with regular SPI if necessary."
+* I2S most obscure so select first
+* counting IO pins of protocols gives minimum
+* if looking for cheap, probably have low number of pins overall so set max. pin count
+(remove 'future' devices to not show unlisted prices)
+* add to side-by-side, e.g. cheapest might be MIPS, so compare with say ARM
+
 
 TODO: when at company, ask how their software development process aligns with waterfall/agile stages
 
@@ -164,7 +174,9 @@ only compile gcc from scratch if wanting to link to specific version of libc on 
 
 
 
- Circuit simulators: https://www.falstad.com/circuit/circuitjs.html
+ Circuit simulators:
+   * (simple circuits) https://www.falstad.com/circuit/circuitjs.html
+   * (complex circuits; manufacturers provide SPICE models of components?) https://www.analog.com/en/design-center/design-tools-and-calculators/ltspice-simulator.html  
  Button debouncing: https://hackaday.com/2015/12/09/embed-with-elliot-debounce-your-noisy-buttons-part-i/
  Useful serial oscilloscope tool, windows: https://x-io.co.uk/serial-oscilloscope/  
  plantuml.com for code generating diagrams
@@ -180,6 +192,14 @@ only compile gcc from scratch if wanting to link to specific version of libc on 
   If something affecting system timing too much perhaps only run in the sleep duty cycle 
   (which is often 90% in battery powered devices) 
   so as to not affect system timing
+
+
+about power investigation: 
+https://twitter.com/josecastillo/status/1491897251148533769
+https://twitter.com/josecastillo/status/1492883606854942727?t=Wlj1lyg3WgWpewxXkvFPOw&s=19
+EVAL-ADuM4160EBZ + PPK2
+
+ground loop is essentially multiple grounds instead of one, leading to extraneous current flow as it could go to either one
 
 
  Arduino not suitable for industry (overpriced, library licensing issues, only printf debugging)  
