@@ -30,7 +30,7 @@ struct MemArena
   size_t commit_pos;
   size_t max;
   size_t pos;
-  u32 align;
+  size_t align;
 };
 
 INTERNAL MemArena *
@@ -59,11 +59,11 @@ mem_arena_deallocate(MemArena *arena)
 #define MEM_ARENA_PUSH_STRUCT(a,T) (T*)mem_arena_push((a), sizeof(T))
 
 INTERNAL void *
-mem_arena_push_aligned(MemArena *arena, size_t size, u32 align)
+mem_arena_push_aligned(MemArena *arena, size_t size, size_t align)
 {
   void *result = NULL;
 
-  u32 clamped_align = CLAMP_BOTTOM(align, arena->align);
+  size_t clamped_align = CLAMP_BOTTOM(align, arena->align);
 
   size_t pos = arena->pos;
 

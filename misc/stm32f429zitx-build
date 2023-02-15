@@ -174,16 +174,19 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
     pop_dir
 
     if [[ $test_success = 0 ]]; then
+      echo "$test_output"
+
       # TODO(Ryan): lcov for graphical information 
       # NOTE(Ryan): This generates a .gcov file
       # IMPORTANT(Ryan): This has to be the same version as gcc
       gcov-10 -b -o . tests/${param_mcu}-tests.c >/dev/null
 
       gcovr -e ".*\.h"
+
+      find . -name '*.gcov' -or -name '*.gcda' -or -name '*.gcno' -exec rm -f {} +
     else
       echo "$test_output"
     fi
-    # find . -name '*.gcov' -and -not -name 'linux-main.cpp.gcov' -exec rm {} +
   else
     arm-none-eabi-gcc ${target_compiler_flags[*]} \
       code/${param_mcu}-main.c -o build/${param_mcu}-target-${param_mode}.elf \

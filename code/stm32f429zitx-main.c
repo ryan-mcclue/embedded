@@ -31,7 +31,16 @@ INTERNAL void
 parse_commands(MemArena *arena, String8 cmd)
 {
   String8 space_split = s8_lit(" ");
+  
   String8List cmd_tokens = s8_split(arena, cmd, &space_split, 1);
+  for (String8Node *token = cmd_tokens.first; token != NULL; token = token->next)
+  {
+    printf("%.*s\n", s8_varg(token->string));
+    if (s8_match(token->string, s8_lit("ryan"), S8_MATCH_FLAG_CASE_INSENSITIVE))
+    {
+      printf("RYAN!!\n");
+    }
+  }
 }
 
 #if defined(TEST_BUILD)
@@ -47,6 +56,8 @@ int main(void)
   initialise_global_temp_mem_arenas(KB(32));
 
   TempMemArena temp_arena = temp_mem_arena_get(NULL, 0);
+
+  parse_commands(temp_arena.arena, s8_lit("hi there my name is ryan"));
 
   // systick is 1ms; not spectacular resolution
   // important to recognise possible rollover when doing elapsed time calculations
