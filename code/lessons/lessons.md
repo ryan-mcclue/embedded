@@ -1,7 +1,10 @@
 # Final Project (for employer)
+YOU WANT TO TALK ABOUT THIS IN AN INTERVIEW
 TODO: using an IMU to add tilt/interactivity responses, i.e. transform interface to component
 TODO: look at classmates project github   
-TODO: component selection using digikey
+TODO: component selection using digikey, mouser etc. (if in car require wide temperature ranges, if outerspace require radiation hardening)
+
+TODO: when at company, ask how their software development process aligns with waterfall/agile stages
 
 unfortunately no strict commonality using an IDE or compiler make system with embedded.
 lots of projects different
@@ -50,23 +53,68 @@ How long would the device last on a battery? What could you do to make it last l
 ○ How would you extend this project to do something more? Are there other
 features you’d like? How would you go about adding them?
 
+only compile gcc from scratch if wanting to link to specific version of libc on embedded linux
 
 # Week 1
  ## Differentiation
- Embedded system special-purpose. More restrictions/constraints in software (deterministic, real time), 
+ embedded developers only really concerned with active components not passive?
+
+ Look at schematics to get overview of peripherals on board MCU talks with
+ Also, schematic review will be done at some stage during development, so what to be able to 
+ talk with EE about say putting more test points on (could just be copper pads (for oscilloscope could solder on a brass loop)), 
+ verifying MCU/peripherals are similar to what was used on dev-kit,
+ ask about input ranges like what voltage ranges do I expect for ADC?
+ Also, can discuss things that might be inexpensive in hardware, but expensive in software
+
+ Even without RTOS, still have a timer subsystem and separation of tasks, which is backbone of RTOS
+ 
+ Feedback on PCB design could be using I2C over SPI in relation to number of wires?
+
+ TODO(Ryan): How does manufacturing software work, e.g. software to coordinate flashing of 1000s of boards
+
+ Fundamentally cool to create devices that interact with world and not just screens 
+
+ Embedded system special-purpose (generally systems are resource constrained for manufacturing cheapness, or less power usage). 
+ More restrictions/constraints in software (deterministic, real time), 
  hardware (speed, code, ram), debugging (limited hardware breakpoint timing errors), 
  mass deployment/maintanence
 
  Learning a new MCU is like a new programming language
  DSP used to be discrete chip, now MCU functinality
 
- Embedded systems is a team sport of EE and software. 
+ Embedded systems is a team sport of EE and software. So, most come from either background.
+ Will always be lacking some knowledge, but need basics of EE in my case
  Could be bug in software or hardware (power supply failing, failed to get cpu errata).
  Therefore, most embedded systems difficult as you often only know half
  Embedded systems interact with our world, not just our screens
 
- Have code cross compile for M0+ and M4, as supporting product line, not just one product
- Using multiple compilers when writing different libraries, or even a library/driver may be written for one
+ IMPORTANT(Ryan): In addition to being accessed elsewhere (interrupt handler, thread), 
+ volatile also indicates accessing something elsewhere (e.g. memory-mapped)
+ * schematic reading (larger component first. mcu name, family, memory from name)
+ * if having to register-work, use struct cast
+ * bugs not just in domain of software. however, best to assume software, then build a case for hardware, e.g. errata, solder glob, psu failing etc. 
+   (necesity of HIL to reveal hardware issues?)
+   (in fact, any free time should be spent on HIL tests?)
+   (TODO: how exactly to write tests to verify hardware is functional)
+   Issue with embedded testing is that there is so many ways to test, e.g. simulator, unit, hardware
+   debugging thoughts -> how to isolate system first -> has power? -> timing correct? 
+ * many embedded systems designed less than optimally, as often have to wait for hardware to be ready, resulting in software quality time getting squeezed
+   (e.g. may have to implement software workarounds for things that should be in hardware)
+
+   often have 2 hardware breakpoint units (called "watchpoint units" in ARM's documentation)
+   software breakpoint requires modification of code to insert breakpoint instruction
+
+   Have code cross compile for M0+ and M4, as supporting product line, not just one product
+   Using multiple compilers when writing different libraries, or even a library/driver may be written for one
+
+  logiic analyser for communication packets
+  mutlimeter continuity
+  how long function takes --> set GPIO line high when in function --> time signal in oscilloscope (so oscilloscope often used to verify timing)
+  IMPORTANT: could take several lines together and send out on a DAC to combine into a single signal for easier viewing
+  (so, some soldering might be required when connecting wire to IO line on a PCB board, i.e. not demo board)
+  IMPORTANT: major factor in embedded is having ability to test things easily
+  so, IO line if want to reduce timing overhead
+  IMPORTANT: want MCU that exposes JTAG/SWD pins for debugger  
 
   component selection is capabilities and then what environment for these components
 
