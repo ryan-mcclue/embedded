@@ -26,7 +26,11 @@ typedef double f64;
 
 #define GLOBAL static
 #define LOCAL static
-#define INTERNAL static
+#if !defined(TEST_BUILD)
+ #define INTERNAL static
+#else
+  #define INTERNAL
+#endif
 #define GLOBAL_CONST PROGMEM
 
 #if defined(TEST_BUILD)
@@ -274,7 +278,7 @@ INTERNAL void __bp(void) {}
 
 #define ARRAY_COUNT(a) (sizeof(a) / sizeof(a[0]))
 
-#define INT_FROM_PTR(p) ((u32)((char *)p - (char *)0))
+#define INT_FROM_PTR(p) ((uintptr_t)((char *)p - (char *)0))
 #define PTR_FROM_INT(n) ((void *)((char *)0 + (n)))
 
 #define ABSTRACT_MEMBER(s, member) (((s *)0)->member)

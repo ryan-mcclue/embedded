@@ -27,14 +27,14 @@ typedef struct MemArena MemArena;
 struct MemArena
 {
   void *memory;
-  u32 commit_pos;
-  u32 max;
-  u32 pos;
+  size_t commit_pos;
+  size_t max;
+  size_t pos;
   u32 align;
 };
 
 INTERNAL MemArena *
-mem_arena_allocate(u32 cap)
+mem_arena_allocate(size_t cap)
 {
   MemArena *result = (MemArena *)malloc(cap);
   ERRNO_ASSERT(result != NULL);
@@ -59,23 +59,23 @@ mem_arena_deallocate(MemArena *arena)
 #define MEM_ARENA_PUSH_STRUCT(a,T) (T*)mem_arena_push((a), sizeof(T))
 
 INTERNAL void *
-mem_arena_push_aligned(MemArena *arena, u32 size, u32 align)
+mem_arena_push_aligned(MemArena *arena, size_t size, u32 align)
 {
   void *result = NULL;
 
   u32 clamped_align = CLAMP_BOTTOM(align, arena->align);
 
-  u32 pos = arena->pos;
+  size_t pos = arena->pos;
 
-  u32 pos_address = INT_FROM_PTR(arena) + pos;
-  u32 aligned_pos = ALIGN_POW2_UP(pos_address, clamped_align);
-  u32 alignment_size = aligned_pos - pos_address;
+  size_t pos_address = INT_FROM_PTR(arena) + pos;
+  size_t aligned_pos = ALIGN_POW2_UP(pos_address, clamped_align);
+  size_t alignment_size = aligned_pos - pos_address;
 
   if (pos + alignment_size + size <= arena->max)
   {
     u8 *mem_base = (u8 *)arena;
     result = mem_base + pos + alignment_size;
-    u32 new_pos = pos + alignment_size + size;
+    size_t new_pos = pos + alignment_size + size;
     arena->pos = new_pos;
   }
 
@@ -83,13 +83,13 @@ mem_arena_push_aligned(MemArena *arena, u32 size, u32 align)
 }
 
 INTERNAL void *
-mem_arena_push(MemArena *arena, u32 size)
+mem_arena_push(MemArena *arena, size_t size)
 {
   return mem_arena_push_aligned(arena, size, arena->align);
 }
 
 INTERNAL void *
-mem_arena_push_zero(MemArena *arena, u32 size)
+mem_arena_push_zero(MemArena *arena, size_t size)
 {
   void *memory = mem_arena_push(arena, size);
 
@@ -99,9 +99,9 @@ mem_arena_push_zero(MemArena *arena, u32 size)
 }
 
 INTERNAL void
-mem_arena_set_pos_back(MemArena *arena, u32 pos)
+mem_arena_set_pos_back(MemArena *arena, size_t pos)
 {
-  u32 clamped_pos = CLAMP_BOTTOM(sizeof(*arena), pos);
+  size_t clamped_pos = CLAMP_BOTTOM(sizeof(*arena), pos);
 
   if (arena->pos > clamped_pos)
   {
@@ -110,7 +110,7 @@ mem_arena_set_pos_back(MemArena *arena, u32 pos)
 }
 
 INTERNAL void
-mem_arena_pop(MemArena *arena, u32 size)
+mem_arena_pop(MemArena *arena, size_t size)
 {
   mem_arena_set_pos_back(arena, arena->pos - size);
 }
@@ -131,7 +131,7 @@ struct TempMemArenas
 GLOBAL TempMemArenas global_temp_mem_arenas = ZERO_STRUCT;
 
 INTERNAL void
-initialise_global_temp_mem_arenas(u32 cap)
+initialise_global_temp_mem_arenas(size_t cap)
 {
   for (u32 arena_i = 0; arena_i < ARRAY_COUNT(global_temp_mem_arenas.arenas); ++arena_i)
   {
@@ -143,7 +143,7 @@ typedef struct TempMemArena TempMemArena;
 struct TempMemArena
 {
   MemArena *arena;
-  u32 pos;
+  size_t pos;
 };
 
 INTERNAL TempMemArena

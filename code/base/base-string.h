@@ -2,16 +2,16 @@
 #if !defined(BASE_STRING_H)
 #define BASE_STRING_H
 
-#define STB_SPRINTF_IMPLEMENTATION 1
-#include "stb/stb_sprintf.h"
-
 #include <ctype.h>
+#include <stdarg.h>
+
+
 
 typedef struct String8 String8;
 struct String8
 {
   u8 *str;
-  u64 size;
+  size_t size;
 };
 
 typedef u32 MATCH_FLAGS;
@@ -38,8 +38,8 @@ struct String8List
 {
   String8Node *first;
   String8Node *last;
-  u64 node_count;
-  u64 total_size;
+  size_t node_count;
+  size_t total_size;
 };
 
 typedef struct String8Join String8Join;
@@ -51,7 +51,7 @@ struct String8Join
 };
 
 INTERNAL String8
-s8(u8 *str, u64 size)
+s8(u8 *str, size_t size)
 {
   String8 result = ZERO_STRUCT;
 
@@ -73,13 +73,13 @@ s8_up_to(u8 *start, u8 *up_to)
   String8 string = ZERO_STRUCT;
 
   string.str = start;
-  string.size = (u64)(up_to - start);
+  string.size = (size_t)(up_to - start);
 
   return string;
 }
 
 INTERNAL String8
-s8_substring(String8 str, u64 start, u64 end)
+s8_substring(String8 str, size_t start, size_t end)
 {
   if (end > str.size)
   {
@@ -93,7 +93,7 @@ s8_substring(String8 str, u64 start, u64 end)
 
   if (start > end)
   {
-    SWAP(u64, start, end);
+    SWAP(size_t, start, end);
   }
 
   str.size = end - start;
@@ -103,25 +103,25 @@ s8_substring(String8 str, u64 start, u64 end)
 }
 
 INTERNAL String8
-s8_advance(String8 str, u64 advance)
+s8_advance(String8 str, size_t advance)
 {
   return s8_substring(str, advance, str.size);
 }
 
 INTERNAL String8
-s8_chop(String8 str, u64 chop)
+s8_chop(String8 str, size_t chop)
 {
   return s8_substring(str, 0, str.size - chop);
 }
 
 INTERNAL String8
-s8_prefix(String8 str, u64 prefix)
+s8_prefix(String8 str, size_t prefix)
 {
   return s8_substring(str, 0, prefix);
 }
 
 INTERNAL String8
-s8_suffix(String8 str, u64 suffix)
+s8_suffix(String8 str, size_t suffix)
 {
   return s8_substring(str, str.size - suffix, str.size);
 }
@@ -135,7 +135,7 @@ s8_match(String8 a, String8 b, S8_MATCH_FLAGS flags)
   {
     result = true;
 
-    for (u64 i = 0; i < a.size && i < b.size; i += 1)
+    for (size_t i = 0; i < a.size && i < b.size; i += 1)
     {
       b32 match = (a.str[i] == b.str[i]);
 
@@ -155,13 +155,13 @@ s8_match(String8 a, String8 b, S8_MATCH_FLAGS flags)
   return result;
 }
 
-INTERNAL u64
-s8_find_substring(String8 str, String8 substring, u64 start_pos, MATCH_FLAGS flags)
+INTERNAL size_t
+s8_find_substring(String8 str, String8 substring, size_t start_pos, MATCH_FLAGS flags)
 {
   b32 found = false;
-  u64 found_idx = str.size;
+  size_t found_idx = str.size;
 
-  for (u64 i = start_pos; i < str.size; i += 1)
+  for (size_t i = start_pos; i < str.size; i += 1)
   {
     if (i + substring.size <= str.size)
     {
@@ -203,11 +203,11 @@ s8_fmt(MemArena *arena, char *fmt, ...)
   va_start(args, fmt);
 
   String8 result = ZERO_STRUCT;
-  u64 needed_bytes = (u64)stbsp_vsnprintf(NULL, 0, fmt, args) + 1;
+  size_t needed_bytes = (size_t)vsnprintf(NULL, 0, fmt, args) + 1;
   result.str = MEM_ARENA_PUSH_ARRAY(arena, u8, needed_bytes);
   result.size = needed_bytes - 1;
   result.str[needed_bytes - 1] = '\0';
-  stbsp_vsnprintf((char *)result.str, (int)needed_bytes, fmt, args);
+  vsnprintf((char *)result.str, needed_bytes, fmt, args);
 
   va_end(args);
 
@@ -262,12 +262,12 @@ s8_list_concat(String8List *list, String8List *to_push)
 }
 
 INTERNAL String8List
-s8_split(MemArena *arena, String8 string, int splitter_count, String8 *splitters)
+s8_split(MemArena *arena, String8 string, String8 *splitters, int splitter_count)
 {
   String8List list = ZERO_STRUCT;
 
-  u64 split_start = 0;
-  for(u64 i = 0; i < string.size; i += 1)
+  size_t split_start = 0;
+  for(size_t i = 0; i < string.size; i += 1)
   {
     b32 was_split = 0;
     for (int split_idx = 0; split_idx < splitter_count; split_idx += 1)
@@ -276,7 +276,7 @@ s8_split(MemArena *arena, String8 string, int splitter_count, String8 *splitters
       if (i + splitters[split_idx].size <= string.size)
       {
         match = 1;
-        for (u64 split_i = 0; split_i < splitters[split_idx].size && i + split_i < string.size; split_i += 1)
+        for (size_t split_i = 0; split_i < splitters[split_idx].size && i + split_i < string.size; split_i += 1)
         {
           if (splitters[split_idx].str[split_i] != string.str[i + split_i])
           {
@@ -318,7 +318,7 @@ s8_list_join(MemArena *arena, String8List list, String8Join *join_ptr)
   }
 
   // calculate size & allocate
-  u64 sep_count = 0;
+  size_t sep_count = 0;
   if (list.node_count > 1)
   {
     sep_count = list.node_count - 1;

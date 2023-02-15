@@ -11,7 +11,6 @@
   #include "stm32f4xx_hal.c"
   #include "stm32f4xx_hal_cortex.c"
   #include "stm32f4xx_hal_rcc.c"
-  #include "stm32f4xx_hal_gpio.c"
 #else
   // IMPORTANT(Ryan): Put these in every file
   // Strange circular includes in st drivers otherwise
@@ -27,6 +26,14 @@
 // IMPORTANT(Ryan): For a function to be mocked/wrapped, it must be in a separate translation unit
 // In other words, only function declaration can be present
 
+// TODO(Ryan): Have simple way of running functions in native tests, to allow for native debugging logic
+INTERNAL void
+parse_commands(MemArena *arena, String8 cmd)
+{
+  String8 space_split = s8_lit(" ");
+  String8List cmd_tokens = s8_split(arena, cmd, &space_split, 1);
+}
+
 #if defined(TEST_BUILD)
 int testable_main(void)
 #else
@@ -34,15 +41,16 @@ int main(void)
 #endif
 {
   HAL_Init();
-
   SystemClock_Config();
 
-  //MemArena *permanent_arena = mem_arena_allocate(KB(32));
-  // initialise_global_temp_mem_arenas(KB(32));
+  MemArena *permanent_arena = mem_arena_allocate(KB(32));
+  initialise_global_temp_mem_arenas(KB(32));
 
-  // MemArenaTemp temp_arena = mem_arena_temp_get(NULL, 0);
+  TempMemArena temp_arena = temp_mem_arena_get(NULL, 0);
 
-  // MX_GPIO_Init();
+  // systick is 1ms; not spectacular resolution
+  // important to recognise possible rollover when doing elapsed time calculations
+
   while (FOREVER)
   {
 
