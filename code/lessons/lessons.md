@@ -1,3 +1,6 @@
+stack overflow
+https://interrupt.memfault.com/blog/using-psp-msp-limit-registers-for-stack-overflow?utm_campaign=Interrupt%20Blog&utm_medium=email&_hsmi=246134749&_hsenc=p2ANqtz--I2uVI5cNVGZRNMBVa87mOqpftnauUZVi8uvJSgdu9TVrGvJiMZDdsBHLle-dL_UM2DSZoe_VmK-dbq_Np1qg9Gd2_Xg&utm_content=246134749&utm_source=hs_email
+
 # Final Project (for employer)
 YOU WANT TO TALK ABOUT THIS IN AN INTERVIEW
 TODO: using an IMU to add tilt/interactivity responses, i.e. transform interface to component

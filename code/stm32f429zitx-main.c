@@ -62,6 +62,47 @@ int main(void)
   // systick is 1ms; not spectacular resolution
   // important to recognise possible rollover when doing elapsed time calculations
 
+  // GPIO_MODE_EVT_FALLING
+  // an event is a software controlled flow control mechanism
+
+  // 3 low power modes (usage, startup time, activity)
+  // (REQUIRE KNOWLEDGE OF CLOCK SOURCES)
+  // 1. sleep: CPUCLK shuts off
+  //           have wakeup events (could be a button press) that are distinct from interrupts
+  //           HAL_SuspendTick() prior to entering sleep mode
+  //           HAL_PWR_EnterSLEEPMode();
+  //           HAL_ResumeTick();
+  //           However, seems more flexible to use an interrupt (WFI) to wakeup, e.g. timer, SPI bus data etc.
+  // 2. stop: most CLKS off, i.e. all peripheral clocks off (if using WFI, can only use EXTI)
+  //          no need to explicitly suspend systick
+  //          however, on resumption will have to system_intialise(), i.e. start clocks again
+  // 3. standby: SRAM contents lost, most CLKS/oscillators off 
+  //             will restart system on wakeup
+  //             WFI must be on certain pin, e.g. WKUP pin
+  //             still have power say on 3.3V pin
+  //             can check if wakeup by inspecting backup registers
+  //             TODO(Ryan): could also wakeup from watchdog or rtc
+  
+  // IMPORTANT(Ryan): When enabling interrupt, set its priority before
+  
+  // TODO(Ryan): UI --> touch controller and LCD
+
+  // matej DMA
+
+  // rtc for times like every 24hours?
+  // RTC stores date, like day of week etc.
+
+  // LED debugging: (create certain patterns to indicate certain errors)
+  // green heartbeat led timer indicates if running and if CPU overloaded
+  // red led indicates error, say for initialisation error
+  // red and green on if in fault handler
+  // blink at certain rate for when writing/reading to flash
+  // (could solder a current limiting resistor to an LED so can just 'plug-in-play')
+  
+  // Serial debugging logging
+  
+  // perhaps implement mocks for simulator also, so can just run anywhere?
+
   while (FOREVER)
   {
 

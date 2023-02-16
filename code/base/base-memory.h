@@ -5,6 +5,8 @@
 // IMPORTANT(Ryan): Although using memory arenas restricts arbitrary lifetimes, this provides more benefits than negatives.
 // In majority of cases, a large number of allocations can be bucketed into same arena
 
+// TODO(Ryan): Put device into panic mode when out of memory  
+
 #include <string.h>
 #include <stdlib.h>
 
