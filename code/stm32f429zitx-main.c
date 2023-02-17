@@ -52,6 +52,8 @@ int main(void)
   HAL_Init();
   SystemClock_Config();
 
+  // setvbuf(NONE)
+
   MemArena *permanent_arena = mem_arena_allocate(KB(32));
   initialise_global_temp_mem_arenas(KB(32));
 
@@ -87,10 +89,19 @@ int main(void)
   
   // TODO(Ryan): UI --> touch controller and LCD
 
-  // matej DMA
+  // TODO(Ryan): matej DMA
+  
+  // startup test could be checking if writing to external SDRAM works
 
-  // rtc for times like every 24hours?
-  // RTC stores date, like day of week etc.
+
+  // flash into sectors which are composed of pages.
+  // only erased in sectors at a time (so much faster than per byte like EEPROM)
+  // however, can be written to pages, or even finer
+  //
+  // flash writing
+  // limit flash writes, must erase before writing, must be in sector/page sizes? default erase byte is?
+  // When you restart, you scan the memory to find the highest sequence number of a block with a valid CRC
+  // In reality most of the blocks in most of the devices can easily reach 3x the limit. With CRC checks you can monitor the integrity of your blocks
 
   // LED debugging: (create certain patterns to indicate certain errors)
   // green heartbeat led timer indicates if running and if CPU overloaded
@@ -102,6 +113,23 @@ int main(void)
   // Serial debugging logging
   
   // perhaps implement mocks for simulator also, so can just run anywhere?
+
+
+  // rtc for times like every 24hours?
+  // a timer is just a basic counter and compare
+  // rtc more options and on separate power domain, e.g. drift register, crystal source?
+  // more accurate readings as direct clock source not PLL?
+  // XTAL are pins for external oscillator (on boards, X labels oscillator)
+  // RTC stores date, like day of week etc.
+  // for accurate, i.e. mininmal drifting stm32 rtc, want it to be clocked with LSE (as its at 32.768KHz which is a sweet spot?) 
+  // the LSI is not as accurate? meaning crystal frequency varies?
+  // why want low frequency as compared to say HSE?
+  // IMPORTANT: LSE must be enabled via RCC
+  // RTC operates in backup domain, so on reset will retain (only if power still to VBAT, not necessarily whole system VCC?)
+  // Will require initial setting to actual time
+  //
+  // Not all discovery boards have this on them, rather only have pads for you to solder your own cystal to
+  // RTC can be used to timestamp data
 
   while (FOREVER)
   {

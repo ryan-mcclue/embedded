@@ -7,7 +7,7 @@ TODO: using an IMU to add tilt/interactivity responses, i.e. transform interface
 TODO: look at classmates project github   
 TODO: (if in car require wide temperature ranges, if outerspace require radiation hardening)
 
-MCU selection using microchip/maps
+MCU parametric selection using microchip/maps
 "I need the cheapest part I can get, for multiple 10K unit production runs with one SPI bus, one I2S  bus, DMA channels and a handful of GPIOs 
 with at least one ADC input. QSPI / SDIO is a nice to have, but I can get by with regular SPI if necessary."
 * I2S most obscure so select first
