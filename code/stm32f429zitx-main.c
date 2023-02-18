@@ -1,7 +1,15 @@
 // IMPORTANT(Ryan): Remove #defines to enable peripherals when required
 //#include "stm32f4xx_hal_conf.h"
 
-#if !defined(TEST_BUILD)
+// TODO(Ryan): Have macro definition like in stb libraries to allow for mocking
+#include "base-inc.h"
+
+#if defined(WANT_MOCKS)
+  // IMPORTANT(Ryan): Put these in every file
+  // Strange circular includes in st drivers otherwise
+  #include "stm32f4xx.h"
+  #include "stm32f4xx_hal.h"
+#else
   #include "stm32f4xx_hal_msp.c" 
   #include "stm32f4xx_it.c" 
   #include "syscalls.c" 
@@ -11,15 +19,7 @@
   #include "stm32f4xx_hal.c"
   #include "stm32f4xx_hal_cortex.c"
   #include "stm32f4xx_hal_rcc.c"
-#else
-  // IMPORTANT(Ryan): Put these in every file
-  // Strange circular includes in st drivers otherwise
-  #include "stm32f4xx.h"
-  #include "stm32f4xx_hal.h"
 #endif
-
-// TODO(Ryan): Have macro definition like in stb libraries to allow for mocking
-#include "base-inc.h"
 
 #include "stm32f429zitx-boot.h"
 
@@ -49,6 +49,10 @@ int testable_main(void)
 int main(void)
 #endif
 {
+  // ./configure --help 
+  // ./configure --target-list="arm-softmmu"
+  // make -j$(getconf _NPROCESSORS_ONLN)
+
   HAL_Init();
   SystemClock_Config();
 

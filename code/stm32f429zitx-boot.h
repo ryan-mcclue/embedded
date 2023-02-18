@@ -3,10 +3,10 @@
 #if !defined(BOOT_H)
 #define BOOT_H
 
+#if defined(WANT_MOCKS) 
 void SystemClock_Config(void);
 void Error_Handler(void);
-
-#if !defined(TEST_BUILD)
+#else
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */

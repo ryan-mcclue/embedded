@@ -1,0 +1,6 @@
+#!/bin/bash
+# SPDX-License-Identifier: zlib-acknowledgement 
+
+simulation_file=$(ls -t build/*-simulation.elf | head -n1)
+
+qemu-system-arm -S -machine netduinoplus2 -g 1234 "${simulation_file}"

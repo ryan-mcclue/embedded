@@ -40,6 +40,11 @@ typedef double f64;
   #define FOREVER 1
 #endif
 
+#if defined(SIMULATOR_BUILD) || defined(TEST_BUILD)
+  #define WANT_MOCKS 1
+#endif
+
+
 // TODO(Ryan): Seems use global variables for constants, macros for functions? we get added type safety and can get pointer to them
 // we know that any compile time constants will save RAM. compiler optimisation should save codespace also
 // IMPORTANT(Ryan): C99 diverged from C++ C, so as these defined in C99, perhaps not in C++

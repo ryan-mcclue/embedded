@@ -1,0 +1,6 @@
+#!/bin/bash
+# SPDX-License-Identifier: zlib-acknowledgement 
+
+simulation_file=$(ls -t build/*-simulation.elf | head -n1)
+
+arm-none-eabi-gdb -q --nh -ex "file ${simulation_file}" -ex 'target remote localhost:1234'
