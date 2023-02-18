@@ -4,11 +4,16 @@
 // TODO(Ryan): Have macro definition like in stb libraries to allow for mocking
 #include "base-inc.h"
 
-#if defined(WANT_MOCKS)
+#if defined(TEST_BUILD)
   // IMPORTANT(Ryan): Put these in every file
   // Strange circular includes in st drivers otherwise
   #include "stm32f4xx.h"
   #include "stm32f4xx_hal.h"
+#elif defined(SIMULATOR_BUILD)
+  #include "stm32f4xx.h"
+  #include "stm32f4xx_hal.h"
+  #include "syscalls.c" 
+  #include "sysmem.c" 
 #else
   #include "stm32f4xx_hal_msp.c" 
   #include "stm32f4xx_it.c" 

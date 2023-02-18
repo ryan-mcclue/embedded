@@ -112,29 +112,34 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
   test_linker_flags=("${target_linker_flags[@]}")
   test_linker_flags+=( "-lcmocka" "-Wl,--warn-unresolved-symbols" )
 
-  # TODO(Ryan): Simulator
-  # simulator_compiler_flags=$target_compiler_flags
-  # simulator_compiler_flags+=$( "-mfloat-abi=soft" "--specs=rdimon.specs" )
-  # simulator_linker_flags+=$( "-lrdimon" )
-
   target_compiler_flags+=( "-mcpu=cortex-m4" "-mthumb" )
+  # NOTE(Ryan): BSP files
+  # IMPORTANT(Ryan): Renaming '.s' to '.S' allows for the CPP to act on assembly file
+  # Use this to conditionally remove certain system init calls in simulator build
+  target_compiler_flags+=( "code/startup_stm32f429zitx.S" )
+  target_linker_flags+=( "-Tcode/STM32F429ZITX_FLASH.ld" )
+
+  # TODO(Ryan): Investigate hard FPU emulation
+  simulator_compiler_flags=("${target_compiler_flags[@]}")
+  simulator_compiler_flags+=( "-mfloat-abi=soft" "--specs=nano.specs" "-DSIMULATOR_BUILD" )
+  simulator_linker_flags=("${target_linker_flags[@]}")
+  simulator_linker_flags+=( "-lnosys" )
+
   target_compiler_flags+=( "-mfloat-abi=hard" "-mfpu=fpv4-sp-d16" "--specs=nano.specs" )
   target_linker_flags+=( "-lnosys" "-Wl,-Map=build/${param_mcu}-target-${param_mode}.map,--cref" )
-
-  # NOTE(Ryan): BSP files
-  target_compiler_flags+=( "code/startup_stm32f429zitx.s" )
-  target_linker_flags+=( "-Tcode/STM32F429ZITX_FLASH.ld" )
 
   if [[ "$param_mode" == "debug" ]]; then
     common_debug_flags=( "-Wno-unused-function" "-Wno-unused-variable"  "-Wno-unused-but-set-variable" "-Wno-unused-parameter" "-Wno-unused-result" )
     common_debug_flags+=( "-DDEBUG_BUILD" "-g3" "-gdwarf-2" "-O0" )
     target_compiler_flags+=( "${common_debug_flags[@]}" )
     test_compiler_flags+=( "${common_debug_flags[@]}" "--coverage" )
+    simulator_compiler_flags+=( "${common_debug_flags[@]}" )
 
   elif [[ "$param_mode" == "release" ]]; then
     common_release_flags=( "-DRELEASE_BUILD" "-Os" "-ffast-math" "-fipa-pta" )
     target_compiler_flags+=( "${common_release_flags[@]}" ) 
     test_compiler_flags+=( "${common_release_flags[@]}" ) 
+    simulator_compiler_flags+=( "${common_release_flags[@]}" )
 
   else
     error "Currently only support debug and release builds"
@@ -163,6 +168,10 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
     gcc ${test_compiler_flags[*]} \
       tests/${param_mcu}-tests.c -o build/${param_mcu}-tests-${param_mode} \
       ${test_linker_flags[*]}
+
+    # arm-none-eabi-gcc ${simulator_compiler_flags[*]} \
+    #   code/${param_mcu}-main.c -o build/${param_mcu}-${param_mode}-simulator.elf \
+    #   ${simulator_linker_flags[*]}
 
     # NOTE(Ryan): gcov complains if overriding existing .gcda files
     find -name '*.gcda' -exec rm -f {} +
@@ -196,8 +205,6 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
     arm-none-eabi-objcopy -O ihex build/${param_mcu}-target-${param_mode}.elf build/${param_mcu}-target-${param_mode}.hex
   fi
 
-  # TODO(Ryan): Simulator
-  # arm-none-eabi-gcc ${compiler_flags[*]} code/linux-main.cpp -o build/stm32f2323-simulator-debug.elf ${linker_flags[*]}
 
 else
   error "Currently only support arm arm-none-eabi-gcc stm32f429zitx on linux"
