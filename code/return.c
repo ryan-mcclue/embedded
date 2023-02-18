@@ -4,7 +4,6 @@
 #if 0
 // TODO: perhaps debug log include __LINE__ and __func__?
 
-//    setvbuf(stdout, NULL, _IONBF, 0); // Remove buffering on stdout.
 //  void __io_putchar(char c)
 //  {
 //      HAL_UART_Transmit(&CONFIG_CONSOLE_UART, (uint8_t*)&c, 1, HAL_MAX_DELAY);
@@ -119,10 +118,6 @@ main(void)
 {
   // the 'performance' aspect of each modules is just a series of counters for various things
   // so, > uart pm
-
-  // 512Kbytes RAM
-  permanent_memory = arena(100k);
-  temps = arena(50k * 2);
 
   //log_info("Initialising console\n");
 

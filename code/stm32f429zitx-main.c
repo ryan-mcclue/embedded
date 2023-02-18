@@ -61,7 +61,7 @@ int main(void)
   HAL_Init();
   SystemClock_Config();
 
-  // setvbuf(NONE)
+  // setvbuf(stdout, NULL, _IONBF, 0);
 
   MemArena *permanent_arena = mem_arena_allocate(KB(32));
   initialise_global_temp_mem_arenas(KB(32));

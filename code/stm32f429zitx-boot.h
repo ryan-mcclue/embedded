@@ -4,6 +4,7 @@
 #define BOOT_H
 
 #if defined(WANT_MOCKS) 
+void stm32f429zitx_initialise(void);
 void SystemClock_Config(void);
 void Error_Handler(void);
 #else
@@ -17,9 +18,6 @@ void Error_Handler(void)
   }
   /* USER CODE END Error_Handler_Debug */
 }
-
-// TODO(Ryan): Fix vim errorformat to include cmocka error message
-// tests/stm32f429zitx-tests.c:22: error: Expected call to HAL_Init but received called() in __wrap_HAL_Init
 
 void SystemClock_Config(void)
 {
