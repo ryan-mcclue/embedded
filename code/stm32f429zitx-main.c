@@ -58,8 +58,8 @@ int main(void)
   // ./configure --target-list="arm-softmmu"
   // make -j$(getconf _NPROCESSORS_ONLN)
 
-  HAL_Init();
-  SystemClock_Config();
+  // TODO(Ryan): Add error handling
+  stm32f429zitx_initialise();
 
   // setvbuf(stdout, NULL, _IONBF, 0);
 
