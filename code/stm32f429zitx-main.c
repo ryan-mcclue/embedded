@@ -62,6 +62,7 @@ int main(void)
   stm32f429zitx_initialise();
 
   // setvbuf(stdout, NULL, _IONBF, 0);
+  // TODO(Ryan): In RAM code just calls custom printc(), so why this no buffering call? For streams?
 
   MemArena *permanent_arena = mem_arena_allocate(KB(32));
   initialise_global_temp_mem_arenas(KB(32));
