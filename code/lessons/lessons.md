@@ -168,6 +168,25 @@ only compile gcc from scratch if wanting to link to specific version of libc on 
 
 # Week 2
  ## Testing
+  Ability to decompose existing system, required when joining a new job
+  So, know how to draw basic hardware block diagrams
+  Also, know the software high-level, e.g. I2C reads from IMU to 'maintain stability'
+
+  Incoporating a battery involves creation of some additional circuitry (up to 3?)
+  LiPo say has charge rating of 4.2V
+  STM32 max. voltage of 3.6V
+  Just like USB 5V regulator required, attach 3.3V regulator to LiPo
+
+  NOTE: regulator will try and maintain voltage
+  ADC reads voltage, however to ensure within limit, attach to a voltage divider with high resistor values to keep current low
+  However, less current means longer sampling time on ADC, so 2 100K resistors balance
+
+  Another more complex circuit if wanting to incoporate say USB battery charging
+  Use something like MCP73831 linear charge management controller
+
+  Common in industry is have separate chips for purposes, e.g. IMU, RF transceiver.
+  A single chip is often more expensive to develop/maintain and less fault tolerant if one of its susbsystems fails
+
   During dev kit phase, creating a debugging toolchain and 
   testing framework (more tests for more 'riskier' parts) is essential
   Have standard unit/integration tests and 
