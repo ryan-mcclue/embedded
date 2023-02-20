@@ -208,8 +208,17 @@ only compile gcc from scratch if wanting to link to specific version of libc on 
   (probably command console also)
   TODO: POSTS tests like checking battery level, RAM R/W, CRC check? 
 
+  Something like HM-10 bluetooth dongle actually has its own MCU that you could program
 
+  In fact fastest possible is USB. If enough pins, SPI as simpler than I2C
+  I2C and SPI are implemented on a case-by-case basis by looking at datasheet?
 
+  for UI, text rendering: https://faultlore.com/blah/text-hates-you/ 
+
+  Another reason for not using C in startup.s is that an optimising compiler might vectorise loop when FPU has not been enabled
+
+  TODO: Connecting to IoT. Thingspeak, RabbitMQ, OPC ... Why not just custom protocol and server like a game server?
+ 
  Circuit simulators:
    * (simple circuits) https://www.falstad.com/circuit/circuitjs.html
    * (complex circuits; manufacturers provide SPICE models of components?) https://www.analog.com/en/design-center/design-tools-and-calculators/ltspice-simulator.html  
