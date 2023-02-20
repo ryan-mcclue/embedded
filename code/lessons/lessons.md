@@ -171,6 +171,20 @@ only compile gcc from scratch if wanting to link to specific version of libc on 
   Ability to decompose existing system, required when joining a new job
   So, know how to draw basic hardware block diagrams
   Also, know the software high-level, e.g. I2C reads from IMU to 'maintain stability'
+  This understanding of the hierarchy of control in software comes with developing software
+  Often in embedded, matter of delegating/comprising priorities between various subsystems
+  (in essence, interviewer looking for understanding of hardware/software modularisation/encapsulation/coupling etc.)
+  (although I believe inferior to coding, it's not about diagramming persa, attempting to design)
+  (most things in software are complex; manage complexity inside module)
+  (HAL is example of adapter pattern, i.e. adapts higher level application code to lower level hardware)
+  (look for possible design patterns in company code)
+
+  The startup.s file vector table are similar across CPU families, e.g. cortex-m mostly named the same
+  state: thumb state or debug state (when processor halted)
+  mode: thread mode (can use shadowed stack pointer), handler mode 
+  access level: priveleged/unpriveleged (access all memory regions and perform all operations)
+  State -> mode -> access level
+  (can only go from unpriveleged to priveleged via interrupt)
 
   Incoporating a battery involves creation of some additional circuitry (up to 3?)
   LiPo say has charge rating of 4.2V
