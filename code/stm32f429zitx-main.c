@@ -2,6 +2,7 @@
 //#include "stm32f4xx_hal_conf.h"
 
 // TODO(Ryan): Have macro definition like in stb libraries to allow for mocking
+
 #include "base-inc.h"
 
 #if defined(TEST_BUILD)
@@ -25,7 +26,7 @@
   #include "stm32f4xx_hal_cortex.c"
   #include "stm32f4xx_hal_rcc.c"
   #include "stm32f4xx_hal_gpio.c"
-  #include "stm32f4xx_hal_usart.c"
+  #include "stm32f4xx_hal_uart.c"
 #endif
 
 #include "stm32f429zitx-config.h"
@@ -151,15 +152,25 @@ int main(void)
 
   while (FOREVER)
   {
-// HAL_StatusTypeDef HAL_USART_Receive(USART_HandleTypeDef *husart, uint8_t *pRxData, uint16_t Size, uint32_t Timeout)
-    String8 msg = s8_lit("Hello from MCU!\n");
-    HAL_StatusTypeDef hal_status = HAL_USART_Transmit(&usart_handle, msg.str, (u16)msg.size, 500);
-    if (hal_status != HAL_OK)
+    char ch = 'a';
+
+#if 1
+    HAL_StatusTypeDef hal_status = HAL_UART_Receive(&usart_handle, (u8 *)&ch, 1, 5000);
+    if (hal_status == HAL_OK && ch == 'h')
     {
-      // TODO(Ryan): Get Ozone to recognise symbol to set breakpoint
-      BP();
-      u32 x = 10;
+      String8 msg = s8_lit("Hello from MCU!\n");
+      hal_status = HAL_UART_Transmit(&usart_handle, msg.str, (u16)msg.size, 500);
     }
+#else
+      String8 msg = s8_lit("Hello from MCU!\n");
+      HAL_StatusTypeDef hal_status = HAL_USART_Transmit(&usart_handle, msg.str, (u16)msg.size, 500);
+#endif
+
+      // IMPORTANT(Ryan): Ozone won't load symbol if not called directly.
+      // So, unfortunately cannot call from a macro to have it easily compiled out
+      // __bp();
+
+    // tep_mem_arena_release(temp_arena);
   }
 
   return 0;

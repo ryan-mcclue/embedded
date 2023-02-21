@@ -59,10 +59,10 @@ void usart_interrupt(instance_id, irq_type)
 #define CONFIG_CONSOLE_USART_PERIPHERAL USART3
 
 
-GLOBAL USART_HandleTypeDef usart_handle = ZERO_STRUCT;
+GLOBAL UART_HandleTypeDef usart_handle = ZERO_STRUCT;
 
 // TODO(Ryan): Provide a deinit
-STATUS initialise_usart(void)
+INTERNAL STATUS initialise_usart(void)
 {
   STATUS result = STATUS_FAILED;
 
@@ -87,29 +87,32 @@ STATUS initialise_usart(void)
 
 
   // NOTE(Ryan): USART init
+  // only clock is USART specific
   __HAL_RCC_USART3_CLK_ENABLE();
 
-  USART_InitTypeDef usart_init = ZERO_STRUCT;
+  // IMPORTANT(Ryan): Even though USART peripheral, use UART struct
+  // This is because we don't want an outgoing clock signal
+  // This will cause us to read garbage on receive for most serial terminals 
+  UART_InitTypeDef usart_init = ZERO_STRUCT;
   usart_init.BaudRate = CONFIG_CONSOLE_BAUD_RATE;
-  usart_init.WordLength = USART_WORDLENGTH_8B;
-  usart_init.StopBits = USART_STOPBITS_1;  
-  usart_init.Parity = USART_PARITY_NONE;   
-  usart_init.Mode = USART_MODE_TX_RX;            
-  usart_init.CLKPolarity = USART_POLARITY_LOW;
-  usart_init.CLKPhase = USART_PHASE_1EDGE;
-  usart_init.CLKLastBit = USART_LASTBIT_DISABLE;
+  usart_init.WordLength = UART_WORDLENGTH_8B;
+  usart_init.StopBits = UART_STOPBITS_1;  
+  usart_init.Parity = UART_PARITY_NONE;   
+  usart_init.Mode = UART_MODE_TX_RX;            
+	usart_init.HwFlowCtl = UART_HWCONTROL_NONE;
+	usart_init.OverSampling = UART_OVERSAMPLING_16;
 
   usart_handle.Instance = CONFIG_CONSOLE_USART_PERIPHERAL;
   usart_handle.Init = usart_init;
 
   // IMPORTANT(Ryan): Seems that even if buffer size is requested, this is only if we use
   // HAL supplied interrupt methods.
-  // The actual buffer of the UART hardware is already set
+  // The actual buffer of the UART hardware is already set at 1 byte (so can get buffer overruns if polling)
   // So, can leave this out
 
   // TODO(Ryan): May have to fiddle/include DMA parameters in init struct if want them?
 
-  HAL_StatusTypeDef hal_status = HAL_USART_Init(&usart_handle);
+  HAL_StatusTypeDef hal_status = HAL_UART_Init(&usart_handle);
   if (hal_status != HAL_OK)
   {
     result = STATUS_FAILED; 
@@ -120,7 +123,6 @@ STATUS initialise_usart(void)
   }
 
   return result;
-    // __HAL_UART_ENABLE(&handle)
 
     // LL_USART_EnableIT_RXNE(st->uart_reg_base);
     // LL_USART_EnableIT_TXE(st->uart_reg_base);
