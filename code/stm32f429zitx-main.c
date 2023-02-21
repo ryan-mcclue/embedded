@@ -31,7 +31,7 @@
 
 #include "stm32f429zitx-config.h"
 #include "stm32f429zitx-boot.h"
-#include "stm32f429zitx-usart.c"
+#include "stm32f429zitx-uart.c"
 
 // IMPORTANT(Ryan): For a function to be mocked/wrapped, it must be in a separate translation unit
 // In other words, only function declaration can be present
@@ -74,7 +74,16 @@ int main(void)
 
   TempMemArena temp_arena = temp_mem_arena_get(NULL, 0);
 
-  if (initialise_usart() == STATUS_FAILED)
+  UartParams uart_params = ZERO_STRUCT;
+  uart_params.tx_pin = GPIO_PIN_8;
+  uart_params.rx_pin = GPIO_PIN_9;
+  uart_params.af = GPIO_AF7_USART3;
+  uart_params.gpio_base = GPIOD;
+  uart_params.baud_rate = 57600;
+  uart_params.uart_base = USART3;
+
+  UartResult uart_result = stm32f429zitx_initialise_uart(&uart_params);
+  if (uart_result.status == STATUS_FAILED)
   {
     while (1) {}
   }
@@ -154,17 +163,12 @@ int main(void)
   {
     char ch = 'a';
 
-#if 1
-    HAL_StatusTypeDef hal_status = HAL_UART_Receive(&usart_handle, (u8 *)&ch, 1, 5000);
+    HAL_StatusTypeDef hal_status = HAL_UART_Receive(&uart_result.handle, (u8 *)&ch, 1, 5000);
     if (hal_status == HAL_OK && ch == 'h')
     {
       String8 msg = s8_lit("Hello from MCU!\n");
-      hal_status = HAL_UART_Transmit(&usart_handle, msg.str, (u16)msg.size, 500);
+      hal_status = HAL_UART_Transmit(&uart_result.handle, msg.str, (u16)msg.size, 500);
     }
-#else
-      String8 msg = s8_lit("Hello from MCU!\n");
-      HAL_StatusTypeDef hal_status = HAL_USART_Transmit(&usart_handle, msg.str, (u16)msg.size, 500);
-#endif
 
       // IMPORTANT(Ryan): Ozone won't load symbol if not called directly.
       // So, unfortunately cannot call from a macro to have it easily compiled out

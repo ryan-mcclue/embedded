@@ -42,6 +42,30 @@
 void USART1_IRQHandler(void)
 {
   usart_interrupt(usart_instance_1, USART1_IRQn);
+
+UART_HandleTypeDef *handle = &uart->getHandle();
+
+  if (__HAL_UART_GET_FLAG(handle, UART_FLAG_RXNE)) {
+    uint8_t data = uart->data_rx();
+    if (rx_state) {
+    	rx_fifo->push(data);
+    	// clear this to ensure it doesn't continually call the interrupt handler again
+    	__HAL_UART_CLEAR_FLAG(handle, UART_FLAG_RXNE);
+    }
+  }
+
+  if (__HAL_UART_GET_FLAG(handle, UART_FLAG_TXE)) {
+  	if (!tx_fifo->empty()) {
+      uart->data_tx(tx_fifo->pop());
+  	} else {
+  		uart->stop_tx();
+  		tx_state = PeriphInactive;
+  	}
+
+  	__HAL_UART_CLEAR_FLAG(handle, UART_FLAG_TXE);
+
+
+
 }
 
 void usart_interrupt(instance_id, irq_type)
@@ -50,86 +74,107 @@ void usart_interrupt(instance_id, irq_type)
 }
 #endif
 
-// IMPORTANT(Ryan): Assume 8N1
-#define CONFIG_CONSOLE_GPIO_PORT GPIOD
-#define CONFIG_CONSOLE_TX_PIN GPIO_PIN_8
-#define CONFIG_CONSOLE_RX_PIN GPIO_PIN_9
-#define CONFIG_CONSOLE_AF GPIO_AF7_USART3
-#define CONFIG_CONSOLE_BAUD_RATE 57600
-#define CONFIG_CONSOLE_USART_PERIPHERAL USART3
-
-
-GLOBAL UART_HandleTypeDef usart_handle = ZERO_STRUCT;
-
-// TODO(Ryan): Provide a deinit
-INTERNAL STATUS initialise_usart(void)
+typedef struct UartParams UartParams;
+struct UartParams
 {
-  STATUS result = STATUS_FAILED;
+  // NOTE(Ryan): GPIO settings
+  // TODO(Ryan): Investigate including pin frequency/speed
+  u32 rx_pin, tx_pin; 
+  u32 af;
+  // IMPORTANT(Ryan): Assume rx and tx pins on same GPIO port
+  GPIO_TypeDef *gpio_base; 
+
+  // NOTE(Ryan): UART settings
+  // IMPORTANT(Ryan): Assuming 8N1
+  u32 baud_rate; 
+  USART_TypeDef *uart_base;
+};
+
+// TODO(Ryan): Consider changing name to UartState so as to record if active/deactive
+typedef struct UartResult UartResult;
+struct UartResult
+{
+  UART_HandleTypeDef handle;
+  STATUS status;
+};
+
+INTERNAL UartResult 
+stm32f429zitx_initialise_uart(UartParams *uart_params)
+{
+  UartResult result = ZERO_STRUCT;
 
   ASSERT(__HAL_RCC_GPIOD_IS_CLK_ENABLED());
 
   // NOTE(Ryan): GPIO init
   GPIO_InitTypeDef gpio_init = ZERO_STRUCT; 
-  gpio_init.Pin = CONFIG_CONSOLE_TX_PIN;
+  gpio_init.Pin = uart_params->tx_pin;
   gpio_init.Mode = GPIO_MODE_AF_PP; // almost always PP as want to be able to set 0 and 1
   gpio_init.Pull = GPIO_PULLUP; // only want if reading
   gpio_init.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-  gpio_init.Alternate = CONFIG_CONSOLE_AF;
-	HAL_GPIO_Init(CONFIG_CONSOLE_GPIO_PORT, &gpio_init);
+  gpio_init.Alternate = uart_params->af;
+	HAL_GPIO_Init(uart_params->gpio_base, &gpio_init);
 
-	gpio_init.Pin = CONFIG_CONSOLE_RX_PIN;
+	gpio_init.Pin = uart_params->rx_pin;
 	gpio_init.Mode = GPIO_MODE_AF_PP;
 	// prevent possible spurious reads of a start bit resulting from floating state
 	gpio_init.Pull = GPIO_PULLUP;
 	gpio_init.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-	gpio_init.Alternate = CONFIG_CONSOLE_AF;
-	HAL_GPIO_Init(CONFIG_CONSOLE_GPIO_PORT, &gpio_init);
+	gpio_init.Alternate = uart_params->af;
+	HAL_GPIO_Init(uart_params->gpio_base, &gpio_init);
 
 
   // NOTE(Ryan): USART init
   // only clock is USART specific
+  ASSERT(uart_params->uart_base == USART3);
   __HAL_RCC_USART3_CLK_ENABLE();
 
   // IMPORTANT(Ryan): Even though USART peripheral, use UART struct
   // This is because we don't want an outgoing clock signal
   // This will cause us to read garbage on receive for most serial terminals 
-  UART_InitTypeDef usart_init = ZERO_STRUCT;
-  usart_init.BaudRate = CONFIG_CONSOLE_BAUD_RATE;
-  usart_init.WordLength = UART_WORDLENGTH_8B;
-  usart_init.StopBits = UART_STOPBITS_1;  
-  usart_init.Parity = UART_PARITY_NONE;   
-  usart_init.Mode = UART_MODE_TX_RX;            
-	usart_init.HwFlowCtl = UART_HWCONTROL_NONE;
-	usart_init.OverSampling = UART_OVERSAMPLING_16;
+  UART_InitTypeDef uart_init = ZERO_STRUCT;
+  uart_init.BaudRate = uart_params->baud_rate;
+  uart_init.WordLength = UART_WORDLENGTH_8B;
+  uart_init.StopBits = UART_STOPBITS_1;
+  uart_init.Parity = UART_PARITY_NONE;
+  uart_init.Mode = UART_MODE_TX_RX;
+	uart_init.HwFlowCtl = UART_HWCONTROL_NONE;
+	uart_init.OverSampling = UART_OVERSAMPLING_16;
 
-  usart_handle.Instance = CONFIG_CONSOLE_USART_PERIPHERAL;
-  usart_handle.Init = usart_init;
+  result.handle.Instance = uart_params->uart_base;
+  result.handle.Init = uart_init;
 
-  // IMPORTANT(Ryan): Seems that even if buffer size is requested, this is only if we use
-  // HAL supplied interrupt methods.
-  // The actual buffer of the UART hardware is already set at 1 byte (so can get buffer overruns if polling)
-  // So, can leave this out
+  // IMPORTANT(Ryan): 
+  // If we want to process multibyte data, will require interrupts to avoid buffer overrun in polling.
+  // This is because of UART hardware having a 1 byte buffer
 
   // TODO(Ryan): May have to fiddle/include DMA parameters in init struct if want them?
 
-  HAL_StatusTypeDef hal_status = HAL_UART_Init(&usart_handle);
+  HAL_StatusTypeDef hal_status = HAL_UART_Init(&result.handle);
   if (hal_status != HAL_OK)
   {
-    result = STATUS_FAILED; 
+    result.status = STATUS_FAILED; 
   }
   else
   {
-    result = STATUS_SUCEEDED;
-  }
+    // TODO(Ryan): Investigate savings gained by lazy loading interrupts
 
-  return result;
+    // __HAL_UART_ENABLE_IT(huart, UART_IT_TXE);
+    // __HAL_UART_ENABLE_IT(huart, UART_IT_RXNE);
 
-    // LL_USART_EnableIT_RXNE(st->uart_reg_base);
-    // LL_USART_EnableIT_TXE(st->uart_reg_base);
+    // priorities and sub group priorities ...
+    // so instead of major.minor interrupt priorities,
+    // only have single number between 0-15
+    // HAL_NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_4);
 
+
+    // USART3_IRQn
     // NVIC_SetPriority(irq_type,
     //                  NVIC_EncodePriority(NVIC_GetPriorityGrouping(),0, 0));
     // NVIC_EnableIRQ(irq_type);
+    result.status = STATUS_SUCEEDED;
+  }
+
+  return result;
 }
 
 

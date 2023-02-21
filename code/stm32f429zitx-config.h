@@ -8,8 +8,8 @@
 typedef u32 STATUS;
 enum
 {
+  STATUS_FAILED = 0,
   STATUS_SUCEEDED,
-  STATUS_FAILED,
 };
 
 // IMPORTANT(Ryan): File naming convention
