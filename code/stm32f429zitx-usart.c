@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: zlib-acknowledgement
 
 
+#if 0
 // TODO(Ryan): Make distinctions between what you define, and what is typically defined by HAL
 #define QAD_UART1_TX_PORT GPIOA
 #define QAD_UART1_TX_PIN GPIO_PIN_9
@@ -47,51 +48,49 @@ void usart_interrupt(instance_id, irq_type)
 {
   UsartState state = global_usart_state[instance_id];
 }
+#endif
+
+// IMPORTANT(Ryan): Assume 8N1
+#define CONFIG_CONSOLE_GPIO_PORT GPIOD
+#define CONFIG_CONSOLE_TX_PIN GPIO_PIN_8
+#define CONFIG_CONSOLE_RX_PIN GPIO_PIN_9
+#define CONFIG_CONSOLE_AF GPIO_AF7_USART3
+#define CONFIG_CONSOLE_BAUD_RATE 57600
+#define CONFIG_CONSOLE_USART_PERIPHERAL USART3
+
+
+GLOBAL USART_HandleTypeDef usart_handle = ZERO_STRUCT;
 
 // TODO(Ryan): Provide a deinit
-void initialise_usart(void)
+STATUS initialise_usart(void)
 {
-// PD8 USART3 TX , AF 7
-// PD9 USART3 RX
+  STATUS result = STATUS_FAILED;
 
+  ASSERT(__HAL_RCC_GPIOD_IS_CLK_ENABLED());
+
+  // NOTE(Ryan): GPIO init
   GPIO_InitTypeDef gpio_init = ZERO_STRUCT; 
-  gpio_init.Pin = GPIO_PIN_8;
+  gpio_init.Pin = CONFIG_CONSOLE_TX_PIN;
   gpio_init.Mode = GPIO_MODE_AF_PP; // almost always PP as want to be able to set 0 and 1
-  gpio_init.Pull = GPIO_NOPULL; // only want if reading
+  gpio_init.Pull = GPIO_PULLUP; // only want if reading
   gpio_init.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-  gpio_init.Alternate = GPIO_AF7_USART3;
-	HAL_GPIO_Init(GPIOD, &gpio_init);
+  gpio_init.Alternate = CONFIG_CONSOLE_AF;
+	HAL_GPIO_Init(CONFIG_CONSOLE_GPIO_PORT, &gpio_init);
 
-	GPIO_Init.Pin = rx_pin;
-	GPIO_Init.Mode = GPIO_MODE_AF_PP;
+	gpio_init.Pin = CONFIG_CONSOLE_RX_PIN;
+	gpio_init.Mode = GPIO_MODE_AF_PP;
 	// prevent possible spurious reads of a start bit resulting from floating state
-	GPIO_Init.Pull = GPIO_PULLUP;
-	GPIO_Init.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-	GPIO_Init.Alternate = rx_af;
-	HAL_GPIO_Init(rx_gpio, &GPIO_Init);
+	gpio_init.Pull = GPIO_PULLUP;
+	gpio_init.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+	gpio_init.Alternate = CONFIG_CONSOLE_AF;
+	HAL_GPIO_Init(CONFIG_CONSOLE_GPIO_PORT, &gpio_init);
 
 
-  // TODO(Ryan): error handling
-  // seems unless init error, just return error code and continue
-  HAL_GPIO_Init(GPIOD, &gpio_init);
-
-  // note HAL also has _ex files with more pin mappings
-  
-	    __HAL_RCC_USART3_CLK_ENABLE();
-	    __HAL_RCC_USART3_FORCE_RESET();
-	    __HAL_RCC_USART3_RELEASE_RESET();
-
-  // usart clock (rcc)
-  // usart init (.h file look for defines for parameters. 
-  // NOTE: for peripheral bases, typically in main .h file
-  // sometimes might be nice and mention if parameter is defined for you
-  
-  // usart interrupt (search for NVIC in hal cortex file)
-  // record appropriate interrupt type
-  // find appropriate ISR name in startup.s file
+  // NOTE(Ryan): USART init
+  __HAL_RCC_USART3_CLK_ENABLE();
 
   USART_InitTypeDef usart_init = ZERO_STRUCT;
-  usart_init.BaudRate = 57600;
+  usart_init.BaudRate = CONFIG_CONSOLE_BAUD_RATE;
   usart_init.WordLength = USART_WORDLENGTH_8B;
   usart_init.StopBits = USART_STOPBITS_1;  
   usart_init.Parity = USART_PARITY_NONE;   
@@ -100,8 +99,7 @@ void initialise_usart(void)
   usart_init.CLKPhase = USART_PHASE_1EDGE;
   usart_init.CLKLastBit = USART_LASTBIT_DISABLE;
 
-  USART_HandleTypeDef usart_handle = ZERO_STRUCT;
-  usart_handle.Instance = USART3;
+  usart_handle.Instance = CONFIG_CONSOLE_USART_PERIPHERAL;
   usart_handle.Init = usart_init;
 
   // IMPORTANT(Ryan): Seems that even if buffer size is requested, this is only if we use
@@ -111,15 +109,25 @@ void initialise_usart(void)
 
   // TODO(Ryan): May have to fiddle/include DMA parameters in init struct if want them?
 
-  HAL_UART_Init
-__HAL_UART_ENABLE(&handle)
+  HAL_StatusTypeDef hal_status = HAL_USART_Init(&usart_handle);
+  if (hal_status != HAL_OK)
+  {
+    result = STATUS_FAILED; 
+  }
+  else
+  {
+    result = STATUS_SUCEEDED;
+  }
 
-    LL_USART_EnableIT_RXNE(st->uart_reg_base);
-    LL_USART_EnableIT_TXE(st->uart_reg_base);
+  return result;
+    // __HAL_UART_ENABLE(&handle)
 
-    NVIC_SetPriority(irq_type,
-                     NVIC_EncodePriority(NVIC_GetPriorityGrouping(),0, 0));
-    NVIC_EnableIRQ(irq_type);
+    // LL_USART_EnableIT_RXNE(st->uart_reg_base);
+    // LL_USART_EnableIT_TXE(st->uart_reg_base);
+
+    // NVIC_SetPriority(irq_type,
+    //                  NVIC_EncodePriority(NVIC_GetPriorityGrouping(),0, 0));
+    // NVIC_EnableIRQ(irq_type);
 }
 
 

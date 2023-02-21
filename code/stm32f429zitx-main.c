@@ -24,9 +24,13 @@
   #include "stm32f4xx_hal.c"
   #include "stm32f4xx_hal_cortex.c"
   #include "stm32f4xx_hal_rcc.c"
+  #include "stm32f4xx_hal_gpio.c"
+  #include "stm32f4xx_hal_usart.c"
 #endif
 
+#include "stm32f429zitx-config.h"
 #include "stm32f429zitx-boot.h"
+#include "stm32f429zitx-usart.c"
 
 // IMPORTANT(Ryan): For a function to be mocked/wrapped, it must be in a separate translation unit
 // In other words, only function declaration can be present
@@ -69,7 +73,10 @@ int main(void)
 
   TempMemArena temp_arena = temp_mem_arena_get(NULL, 0);
 
-  parse_commands(temp_arena.arena, s8_lit("hi there my name is ryan"));
+  if (initialise_usart() == STATUS_FAILED)
+  {
+    while (1) {}
+  }
 
   // systick is 1ms; not spectacular resolution
   // important to recognise possible rollover when doing elapsed time calculations
@@ -99,7 +106,8 @@ int main(void)
   
   // TODO(Ryan): UI --> touch controller and LCD
 
-  // TODO(Ryan): matej DMA
+  // TODO(Ryan): matej DMA. have both standard and circular DMA?
+  // https://github.com/MaJerle/stm32-usart-uart-dma-rx-tx
   
   // startup test could be checking if writing to external SDRAM works
 
@@ -143,7 +151,15 @@ int main(void)
 
   while (FOREVER)
   {
-
+// HAL_StatusTypeDef HAL_USART_Receive(USART_HandleTypeDef *husart, uint8_t *pRxData, uint16_t Size, uint32_t Timeout)
+    String8 msg = s8_lit("Hello from MCU!\n");
+    HAL_StatusTypeDef hal_status = HAL_USART_Transmit(&usart_handle, msg.str, (u16)msg.size, 500);
+    if (hal_status != HAL_OK)
+    {
+      // TODO(Ryan): Get Ozone to recognise symbol to set breakpoint
+      BP();
+      u32 x = 10;
+    }
   }
 
   return 0;
