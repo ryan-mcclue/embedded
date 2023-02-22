@@ -38,22 +38,41 @@ GLOBAL UART_HandleTypeDef *global_console_uart_handle;
 // IMPORTANT(Ryan): For a function to be mocked/wrapped, it must be in a separate translation unit
 // In other words, only function declaration can be present
 
-typedef u32 (*console_func)(String8List *args);
+typedef u32 (*console_cmd_func)(String8List *args);
+
 typedef struct ConsoleCmd ConsoleCmd;
 struct ConsoleCmd
 {
   ConsoleCmd *next;
+  String8 name, description, help;
 
-  String8 system, name, help;
-
-  console_func func;
+  // all commands should print text like OK 
+  // and return say 1 to allow for testing
+  console_cmd_func func;
 };
 
+typedef struct ConsoleCmdSystem ConsoleCmdSystem;
+struct ConsoleCmdSystem
+{
+  ConsoleCmdSystem *next;
+  String8 name, description;
+
+  // local log level variable
+
+  ConsoleCmd *first;
+  ConsoleCmd *last;
+};
+
+// This will be a global variable?
 typedef struct ConsoleState ConsoleState;
 struct ConsoleState
 {
-  ConsoleCmd *first;
-  ConsoleCmd *last;
+  // global log level variable
+
+  ConsoleCmdSystem *first;
+  ConsoleCmdSystem *last;
+
+  // contain uart handle
 };
 
 INTERNAL u32
@@ -89,11 +108,20 @@ uart_status(String8List *cmds)
   return result;
 }
 
+// ?
+// log, log off
+// TODO: * log info (would act on all subsystems)
+
+// uart ?, uart help
+// uart status (show clients and their rx,tx index and buffer information)
+// uart log (get log level), uart log off, uart log info
+// uart stats, uart stats clear
+// uart test
+
 INTERNAL void
 execute_console_cmd(MemArena *arena, ConsoleState *console_state, String8 cmd)
 {
   String8 space_split = s8_lit(" ");
-  // memory leak here
   String8List cmd_tokens = s8_split(arena, cmd, &space_split, 1);
 
   String8Node *system_token = cmd_tokens.first;
@@ -156,7 +184,7 @@ int main(void)
   ConsoleCmd status = ZERO_STRUCT;
   status.system = s8_lit("uart");
   status.name = s8_lit("status");
-  status.help = s8_lit("Print status. Usage: uart status");
+  status.help = s8_lit("Print status. Usage: uart status\n");
   status.func = uart_status;
 
   ConsoleState console_state = ZERO_STRUCT;
@@ -237,16 +265,24 @@ int main(void)
   while (FOREVER)
   {
     u32 console_buf_size = 64;
-    u8 *console_buf = MEM_ARENA_PUSH_ARRAY(temp_arena.arena, u8, console_buf_size);
+    u8 *console_buf = MEM_ARENA_PUSH_ARRAY_ZERO(temp_arena.arena, u8, console_buf_size);
 
-    HAL_StatusTypeDef hal_status = HAL_UART_Receive(&uart_result.handle, (u8 *)console_buf, (u16)console_buf_size, 5000);
+    String8 console_str = ZERO_STRUCT;
+    console_str.str = console_buf;
+    console_str.size = console_buf_size;
+
+    HAL_StatusTypeDef hal_status = HAL_UART_Receive(&uart_result.handle, (u8 *)console_buf, (u16)console_buf_size, 1000);
     if (hal_status != HAL_ERROR)
     {
-      for (size_t i = 0; i < 32; i += 1)
+      for (size_t i = 0; i < console_buf_size; i += 1)
       {
         char ch = console_buf[i];
-        if (ch == '\n') break;
-        hal_status = HAL_UART_Transmit(&uart_result.handle, console_buf + i, 1, 500);
+        if (ch == '\n') 
+        {
+          String8 cmd = s8_prefix(console_str, i);
+          execute_console_cmd(temp_arena.arena, &console_state, cmd);
+        };
+        // hal_status = HAL_UART_Transmit(&uart_result.handle, console_buf + i, 1, 500);
       }
     }
 
@@ -259,3 +295,70 @@ int main(void)
 
   return 0;
 }
+
+
+// The log toggle char at the console is ctrl-L which is form feed, or 0x0c.
+#define LOG_TOGGLE_CHAR '\x0c'
+
+enum log_level {
+    LOG_OFF = 0,
+    LOG_ERROR,
+    LOG_WARNING,
+    LOG_INFO,
+    LOG_DEBUG,
+    LOG_VERBOSE,
+    LOG_DEFAULT = LOG_INFO
+};
+
+#define LOG_LEVEL_NAMES "off, error, warning, info, debug, verbose"
+#define LOG_LEVEL_NAMES_CSV "off", "error", "warning", "info", "debug", "verbose"
+
+// Core module interface functions.
+
+// Other APIs.
+void log_toggle_active(void);
+bool log_is_active(void);
+void log_printf(const char* fmt, ...);
+
+#define log_error(fmt, ...) do { if (_log_active && log_level >= LOG_ERROR) \
+            log_printf("ERR  " fmt, ##__VA_ARGS__); } while (0)
+#define log_warning(fmt, ...) do { if (_log_active && log_level >= LOG_WARNING) \
+            log_printf("WARN " fmt, ##__VA_ARGS__); } while (0)
+#define log_info(fmt, ...) do { if (_log_active && log_level >= LOG_INFO) \
+            log_printf("INFO " fmt, ##__VA_ARGS__); } while (0)
+#define log_debug(fmt, ...) do { if (_log_active && log_level >= LOG_DEBUG) \
+            log_printf("DBG  " fmt, ##__VA_ARGS__); } while (0)
+#define log_verbose(fmt, ...) do { if (_log_active && log_level >= LOG_VERBOSE) \
+            log_printf("VRBO  " fmt, ##__VA_ARGS__); } while (0)
+
+void log_printf(const char* fmt, ...)
+{
+    va_list args;
+    uint32_t ms = tmr_get_ms(); // HAL_GetTick()
+
+    printc("%lu.%03lu ", ms / 1000U, ms % 1000U);
+    va_start(args, fmt);
+    vprintc(fmt, args);
+    va_end(args);
+}
+
+INTERNAL i32 
+vprintc(const char* fmt, va_list args)
+{
+    char buf[CONFIG_CONSOLE_PRINT_BUF_SIZE];
+    int rc;
+    int idx;
+
+    rc = vsnprintf(buf, CONFIG_CONSOLE_PRINT_BUF_SIZE, fmt, args);
+    for (idx = 0; idx < rc; idx++) {
+        ttys_putc(state.cfg.ttys_instance_id, buf[idx]);
+        if (buf[idx] == '\0')
+            break;
+        if (buf[idx] == '\n') 
+            ttys_putc(state.cfg.ttys_instance_id, '\r');
+    }
+    if (rc >= CONFIG_CONSOLE_PRINT_BUF_SIZE)
+        printc("[!]\n");
+    return rc;
+}
+
