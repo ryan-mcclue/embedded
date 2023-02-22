@@ -88,6 +88,8 @@ struct UartParams
   // IMPORTANT(Ryan): Assuming 8N1
   u32 baud_rate; 
   USART_TypeDef *uart_base;
+
+  // TODO(Ryan): Consider specifying interrupt priority
 };
 
 // TODO(Ryan): Consider changing name to UartState so as to record if active/deactive
@@ -161,6 +163,7 @@ stm32f429zitx_initialise_uart(UartParams *uart_params)
     // __HAL_UART_ENABLE_IT(huart, UART_IT_TXE);
     // __HAL_UART_ENABLE_IT(huart, UART_IT_RXNE);
 
+// http://www.ocfreaks.com/interrupt-priority-grouping-arm-cortex-m-nvic/
     // priorities and sub group priorities ...
     // so instead of major.minor interrupt priorities,
     // only have single number between 0-15

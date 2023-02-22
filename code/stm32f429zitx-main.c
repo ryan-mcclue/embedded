@@ -33,25 +33,89 @@
 #include "stm32f429zitx-boot.h"
 #include "stm32f429zitx-uart.c"
 
+GLOBAL UART_HandleTypeDef *global_console_uart_handle;
+
 // IMPORTANT(Ryan): For a function to be mocked/wrapped, it must be in a separate translation unit
 // In other words, only function declaration can be present
 
-// TODO(Ryan): Have simple way of running functions in native tests, to allow for native debugging logic
+typedef u32 (*console_func)(String8List *args);
+typedef struct ConsoleCmd ConsoleCmd;
+struct ConsoleCmd
+{
+  ConsoleCmd *next;
+
+  String8 system, name, help;
+
+  console_func func;
+};
+
+typedef struct ConsoleState ConsoleState;
+struct ConsoleState
+{
+  ConsoleCmd *first;
+  ConsoleCmd *last;
+};
+
+INTERNAL u32
+uart_status(String8List *cmds)
+{
+  u32 result = 0;
+
+  TempMemArena temp_mem_arena = temp_mem_arena_get(NULL, 0);
+
+  if (cmds->node_count == 2)
+  {
+    String8Node *name_arg = cmds->first;
+    ASSERT(s8_match(name_arg.string, s8_lit("uart"), S8_MATCH_FLAG_CASE_INSENSITIVE));
+
+    String8Node *status_arg = name_arg->next;
+    if (s8_match(status_arg->string, s8_lit("status"), S8_MATCH_FLAG_CASE_INSENSITIVE))
+    {
+      String8 message = s8_lit("Status is a-okay!\n");
+      HAL_StatusTypeDef hal_status = HAL_UART_Transmit(global_console_uart_handle, message.str, (u16)message.size, 500);
+    }
+    else
+    {
+      result = 1;
+    }
+  }
+  else
+  {
+    result = 1;
+  }
+
+  temp_mem_arena_release(temp_mem_arena);
+
+  return result;
+}
+
 INTERNAL void
-parse_commands(MemArena *arena, String8 cmd)
+execute_console_cmd(MemArena *arena, ConsoleState *console_state, String8 cmd)
 {
   String8 space_split = s8_lit(" ");
-  
+  // memory leak here
   String8List cmd_tokens = s8_split(arena, cmd, &space_split, 1);
-  for (String8Node *token = cmd_tokens.first; token != NULL; token = token->next)
+
+  String8Node *system_token = cmd_tokens.first;
+  String8Node *name_token = system_token->next;
+
+  for (ConsoleCmd *console_cmd = console_state->first;
+       console_cmd != NULL;
+       console_cmd = console_cmd->next)
   {
-    printf("%.*s\n", s8_varg(token->string));
-    if (s8_match(token->string, s8_lit("ryan"), S8_MATCH_FLAG_CASE_INSENSITIVE))
+    if (s8_match(system_token->string, console_cmd->system, S8_MATCH_FLAG_CASE_INSENSITIVE) &&
+        s8_match(name_token->string, console_cmd->name, S8_MATCH_FLAG_CASE_INSENSITIVE))
     {
-      printf("RYAN!!\n");
+      if (console_cmd->func(&cmd_tokens) == 1)
+      {
+        HAL_StatusTypeDef hal_status = HAL_UART_Transmit(global_console_uart_handle, console_cmd->help.str, (u16)console_cmd->help.size, 500);
+      }
+
+      break;
     }
   }
 }
+
 
 #if defined(TEST_BUILD)
 int testable_main(void)
@@ -87,6 +151,16 @@ int main(void)
   {
     while (1) {}
   }
+  global_console_uart_handle = &uart_result.handle;
+
+  ConsoleCmd status = ZERO_STRUCT;
+  status.system = s8_lit("uart");
+  status.name = s8_lit("status");
+  status.help = s8_lit("Print status. Usage: uart status");
+  status.func = uart_status;
+
+  ConsoleState console_state = ZERO_STRUCT;
+  SLL_QUEUE_PUSH(console_state.first, console_state.last, &status);
 
   // systick is 1ms; not spectacular resolution
   // important to recognise possible rollover when doing elapsed time calculations
@@ -159,22 +233,28 @@ int main(void)
   // Not all discovery boards have this on them, rather only have pads for you to solder your own cystal to
   // RTC can be used to timestamp data
 
+  // IMPORTANT(Ryan): Expect serial terminal to append newline
   while (FOREVER)
   {
-    char ch = 'a';
+    u32 console_buf_size = 64;
+    u8 *console_buf = MEM_ARENA_PUSH_ARRAY(temp_arena.arena, u8, console_buf_size);
 
-    HAL_StatusTypeDef hal_status = HAL_UART_Receive(&uart_result.handle, (u8 *)&ch, 1, 5000);
-    if (hal_status == HAL_OK && ch == 'h')
+    HAL_StatusTypeDef hal_status = HAL_UART_Receive(&uart_result.handle, (u8 *)console_buf, (u16)console_buf_size, 5000);
+    if (hal_status != HAL_ERROR)
     {
-      String8 msg = s8_lit("Hello from MCU!\n");
-      hal_status = HAL_UART_Transmit(&uart_result.handle, msg.str, (u16)msg.size, 500);
+      for (size_t i = 0; i < 32; i += 1)
+      {
+        char ch = console_buf[i];
+        if (ch == '\n') break;
+        hal_status = HAL_UART_Transmit(&uart_result.handle, console_buf + i, 1, 500);
+      }
     }
 
       // IMPORTANT(Ryan): Ozone won't load symbol if not called directly.
       // So, unfortunately cannot call from a macro to have it easily compiled out
       // __bp();
 
-    // tep_mem_arena_release(temp_arena);
+    temp_mem_arena_release(temp_arena);
   }
 
   return 0;

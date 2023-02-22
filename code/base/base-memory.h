@@ -177,7 +177,7 @@ temp_mem_arena_get(MemArena **conflicts, u32 conflict_count)
 }
 
 INTERNAL void
-tep_mem_arena_release(TempMemArena temp)
+temp_mem_arena_release(TempMemArena temp)
 {
   mem_arena_set_pos_back(temp.arena, temp.pos);
 }
