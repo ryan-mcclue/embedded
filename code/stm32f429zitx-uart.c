@@ -64,7 +64,9 @@ UART_HandleTypeDef *handle = &uart->getHandle();
 
   	__HAL_UART_CLEAR_FLAG(handle, UART_FLAG_TXE);
 
-
+  the UART does continuously generate interrupts once the receive buffer is full - even when I stopped typing characters into PuTTY. 
+    To avoid this, I added the function LL_USART_RequestRxDataFlush() 
+    (disable interrupts in RXNE is recieve buffer is full)
 
 }
 

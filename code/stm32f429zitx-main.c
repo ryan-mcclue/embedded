@@ -38,6 +38,7 @@ GLOBAL UART_HandleTypeDef *global_console_uart_handle;
 // IMPORTANT(Ryan): For a function to be mocked/wrapped, it must be in a separate translation unit
 // In other words, only function declaration can be present
 
+#if 0
 typedef u32 (*console_cmd_func)(String8List *args);
 
 typedef struct ConsoleCmd ConsoleCmd;
@@ -64,8 +65,8 @@ struct ConsoleCmdSystem
 };
 
 // This will be a global variable?
-typedef struct ConsoleState ConsoleState;
-struct ConsoleState
+typedef struct Console Console;
+struct Console
 {
   // global log level variable
 
@@ -143,7 +144,7 @@ execute_console_cmd(MemArena *arena, ConsoleState *console_state, String8 cmd)
     }
   }
 }
-
+#endif
 
 #if defined(TEST_BUILD)
 int testable_main(void)
@@ -181,6 +182,7 @@ int main(void)
   }
   global_console_uart_handle = &uart_result.handle;
 
+#if 0
   ConsoleCmd status = ZERO_STRUCT;
   status.system = s8_lit("uart");
   status.name = s8_lit("status");
@@ -189,6 +191,7 @@ int main(void)
 
   ConsoleState console_state = ZERO_STRUCT;
   SLL_QUEUE_PUSH(console_state.first, console_state.last, &status);
+#endif
 
   // systick is 1ms; not spectacular resolution
   // important to recognise possible rollover when doing elapsed time calculations
@@ -280,7 +283,7 @@ int main(void)
         if (ch == '\n') 
         {
           String8 cmd = s8_prefix(console_str, i);
-          execute_console_cmd(temp_arena.arena, &console_state, cmd);
+          //execute_console_cmd(temp_arena.arena, &console_state, cmd);
         };
         // hal_status = HAL_UART_Transmit(&uart_result.handle, console_buf + i, 1, 500);
       }
@@ -300,65 +303,130 @@ int main(void)
 // The log toggle char at the console is ctrl-L which is form feed, or 0x0c.
 #define LOG_TOGGLE_CHAR '\x0c'
 
-enum log_level {
-    LOG_OFF = 0,
-    LOG_ERROR,
-    LOG_WARNING,
-    LOG_INFO,
-    LOG_DEBUG,
-    LOG_VERBOSE,
-    LOG_DEFAULT = LOG_INFO
+typedef u32 LOG_LEVEL;
+enum {
+  LOG_LEVEL_OFF = 0,
+  LOG_LEVEL_ERROR,
+  LOG_LEVEL_WARNING,
+  LOG_LEVEL_INFO,
+  LOG_LEVEL_DEBUG,
+  LOG_LEVEL_VERBOSE,
+  LOG_LEVEL_COUNT
 };
 
 #define LOG_LEVEL_NAMES "off, error, warning, info, debug, verbose"
-#define LOG_LEVEL_NAMES_CSV "off", "error", "warning", "info", "debug", "verbose"
 
-// Core module interface functions.
-
-// Other APIs.
-void log_toggle_active(void);
-bool log_is_active(void);
-void log_printf(const char* fmt, ...);
-
-#define log_error(fmt, ...) do { if (_log_active && log_level >= LOG_ERROR) \
-            log_printf("ERR  " fmt, ##__VA_ARGS__); } while (0)
-#define log_warning(fmt, ...) do { if (_log_active && log_level >= LOG_WARNING) \
-            log_printf("WARN " fmt, ##__VA_ARGS__); } while (0)
-#define log_info(fmt, ...) do { if (_log_active && log_level >= LOG_INFO) \
-            log_printf("INFO " fmt, ##__VA_ARGS__); } while (0)
-#define log_debug(fmt, ...) do { if (_log_active && log_level >= LOG_DEBUG) \
-            log_printf("DBG  " fmt, ##__VA_ARGS__); } while (0)
-#define log_verbose(fmt, ...) do { if (_log_active && log_level >= LOG_VERBOSE) \
-            log_printf("VRBO  " fmt, ##__VA_ARGS__); } while (0)
-
-void log_printf(const char* fmt, ...)
+INTERNAL char *
+log_level_str(LOG_LEVEL log_level)
 {
-    va_list args;
-    uint32_t ms = tmr_get_ms(); // HAL_GetTick()
+  char *result = "unknown";
 
-    printc("%lu.%03lu ", ms / 1000U, ms % 1000U);
-    va_start(args, fmt);
-    vprintc(fmt, args);
-    va_end(args);
+  switch (log_level)
+  {
+    default: break;
+    case LOG_LEVEL_OFF:
+    {
+      result = "off"; 
+    } break;
+    case LOG_LEVEL_ERROR:
+    {
+      result = "error"; 
+    } break;
+    case LOG_LEVEL_WARNING:
+    {
+      result = "warning"; 
+    } break;
+    case LOG_LEVEL_INFO:
+    {
+      result = "info"; 
+    } break;
+    case LOG_LEVEL_DEBUG:
+    {
+      result = "debug"; 
+    } break;
+    case LOG_LEVEL_VERBOSE:
+    {
+      result = "verbose"; 
+    } break;
+  }
+
+  return result;
 }
 
-INTERNAL i32 
-vprintc(const char* fmt, va_list args)
+INTERNAL void 
+console_printf(char *fmt, ...);
 {
-    char buf[CONFIG_CONSOLE_PRINT_BUF_SIZE];
-    int rc;
-    int idx;
+  va_list args;
+  va_start(args, fmt);
 
-    rc = vsnprintf(buf, CONFIG_CONSOLE_PRINT_BUF_SIZE, fmt, args);
-    for (idx = 0; idx < rc; idx++) {
-        ttys_putc(state.cfg.ttys_instance_id, buf[idx]);
-        if (buf[idx] == '\0')
-            break;
-        if (buf[idx] == '\n') 
-            ttys_putc(state.cfg.ttys_instance_id, '\r');
-    }
-    if (rc >= CONFIG_CONSOLE_PRINT_BUF_SIZE)
-        printc("[!]\n");
-    return rc;
+  TempMemArena arena = temp_mem_arena_get(NULL, 0);
+  
+  String8 message = s8_fmt_nested(arena.arena, fmt, args);
+  
+  HAL_StatusTypeDef hal_status = HAL_UART_Transmit(global_console.uart_handle, 
+                                                   message.str, (u16)message.size, 500);
+  // TODO(Ryan): Add max buffer limit and indicate if reached by appending [!]
+
+  temp_mem_arena_release(arena);
+
+  va_end(args);
 }
 
+INTERNAL void 
+console_printf_nested(char *fmt, va_list args);
+{
+  TempMemArena arena = temp_mem_arena_get(NULL, 0);
+  
+  String8 message = s8_fmt_nested(arena.arena, fmt, args);
+  
+  HAL_StatusTypeDef hal_status = HAL_UART_Transmit(global_console.uart_handle, 
+                                                   message.str, (u16)message.size, 500);
+  // TODO(Ryan): Add max buffer limit and indicate if reached by appending [!]
+
+  temp_mem_arena_release(arena);
+}
+
+
+INTERNAL void
+console_log(char *fmt, ...)
+{
+  va_list args;
+  va_start(args, fmt);
+
+  u32 ms = HAL_GetTick();
+
+  console_printf("%lu.%03lu ", ms / 1000U, ms % 1000U);
+  console_printf_nested(fmt, args);
+
+  va_end(args);
+}
+
+#define LOG_ERROR(SUBSYSTEM, fmt, ...) \
+  do { \
+    if (global_console.log_active && global_SUBSYSTEM_cmd_system.log_level >= LOG_LEVEL_ERROR) \
+      console_log(PASTE("ERROR ", SUBSYSTEM) fmt, ##__VA_ARGS__); \
+  } while (0) 
+
+#define LOG_WARNING(SUBSYSTEM, fmt, ...) \
+  do { \
+    if (global_console.log_active && global_SUBSYSTEM_cmd_system.log_level >= LOG_LEVEL_WARNING) \
+      console_log(PASTE("WARNING ", SUBSYSTEM) fmt, ##__VA_ARGS__); \
+  } while (0) 
+
+#define LOG_INFO(SUBSYSTEM, fmt, ...) \
+  do { \
+    if (global_console.log_active && global_SUBSYSTEM_cmd_system.log_level >= LOG_LEVEL_INFO) \
+      console_log(PASTE("INFO ", SUBSYSTEM) fmt, ##__VA_ARGS__); \
+  } while (0) 
+
+#define LOG_DEBUG(SUBSYSTEM, fmt, ...) \
+  do { \
+    if (global_console.log_active && global_SUBSYSTEM_cmd_system.log_level >= LOG_LEVEL_DEBUG) \
+      console_log(PASTE("DEBUG ", SUBSYSTEM) fmt, ##__VA_ARGS__); \
+  } while (0) 
+
+#define LOG_VERBOSE(SUBSYSTEM, fmt, ...) \
+  do { \
+    if (global_console.log_active && global_SUBSYSTEM_cmd_system.log_level >= LOG_LEVEL_VERBOSE) \
+      console_log(PASTE("VERBOSE ", SUBSYSTEM) fmt, ##__VA_ARGS__); \
+  } while (0) 

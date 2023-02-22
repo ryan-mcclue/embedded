@@ -214,6 +214,19 @@ s8_fmt(MemArena *arena, char *fmt, ...)
   return result;
 }
 
+INTERNAL String8
+s8_fmt_nested(MemArena *arena, char *fmt, va_list args)
+{
+  String8 result = ZERO_STRUCT;
+  size_t needed_bytes = (size_t)vsnprintf(NULL, 0, fmt, args) + 1;
+  result.str = MEM_ARENA_PUSH_ARRAY(arena, u8, needed_bytes);
+  result.size = needed_bytes - 1;
+  result.str[needed_bytes - 1] = '\0';
+  vsnprintf((char *)result.str, needed_bytes, fmt, args);
+
+  return result;
+}
+
 INTERNAL void
 s8_list_push(MemArena *arena, String8List *list, String8 string)
 {
