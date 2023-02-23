@@ -176,7 +176,7 @@ stm32f429zitx_initialise_uart(UartParams *uart_params)
     // NVIC_SetPriority(irq_type,
     //                  NVIC_EncodePriority(NVIC_GetPriorityGrouping(),0, 0));
     // NVIC_EnableIRQ(irq_type);
-    result.status = STATUS_SUCEEDED;
+    result.status = STATUS_SUCCEEDED;
   }
 
   return result;

@@ -1,6 +1,10 @@
 #!/bin/bash
 # SPDX-License-Identifier: zlib-acknowledgement 
 
+# ./configure --help 
+# ./configure --target-list="arm-softmmu"
+# make -j$(getconf _NPROCESSORS_ONLN)
+
 simulation_file=$(ls -t build/*-simulator.elf | head -n1)
 
 # -display none

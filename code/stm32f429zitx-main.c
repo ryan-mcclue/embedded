@@ -3,6 +3,9 @@
 
 // TODO(Ryan): Have macro definition like in stb libraries to allow for mocking
 
+// IMPORTANT(Ryan): For a function to be mocked/wrapped, it must be in a separate translation unit
+// In other words, only function declaration can be present
+
 #include "base-inc.h"
 
 #if defined(TEST_BUILD)
@@ -33,13 +36,58 @@
 #include "stm32f429zitx-boot.h"
 #include "stm32f429zitx-uart.c"
 
-GLOBAL UART_HandleTypeDef *global_console_uart_handle;
+typedef u32 LOG_LEVEL;
+enum {
+  LOG_LEVEL_ERROR,
+  LOG_LEVEL_WARNING,
+  LOG_LEVEL_INFO,
+  LOG_LEVEL_DEBUG,
+  LOG_LEVEL_VERBOSE,
+  LOG_LEVEL_COUNT
+};
 
-// IMPORTANT(Ryan): For a function to be mocked/wrapped, it must be in a separate translation unit
-// In other words, only function declaration can be present
+#define LOG_LEVEL_NAMES "error, warning, info, debug, verbose"
 
-#if 0
-typedef u32 (*console_cmd_func)(String8List *args);
+INTERNAL char *
+log_level_str(LOG_LEVEL log_level)
+{
+  char *result = "unknown";
+
+  switch (log_level)
+  {
+    default: break;
+    case LOG_LEVEL_ERROR:
+    {
+      result = "ERROR"; 
+    } break;
+    case LOG_LEVEL_WARNING:
+    {
+      result = "WARNING"; 
+    } break;
+    case LOG_LEVEL_INFO:
+    {
+      result = "INFO"; 
+    } break;
+    case LOG_LEVEL_DEBUG:
+    {
+      result = "DEBUG"; 
+    } break;
+    case LOG_LEVEL_VERBOSE:
+    {
+      result = "VERBOSE"; 
+    } break;
+  }
+
+  return result;
+}
+
+typedef u32 CONSOLE_CMD_STATUS;
+enum {
+  CONSOLE_CMD_STATUS_FAILED,
+  CONSOLE_CMD_STATUS_SUCEEDED,
+};
+
+typedef CONSOLE_CMD_STATUS (*console_cmd_func)(String8List *args);
 
 typedef struct ConsoleCmd ConsoleCmd;
 struct ConsoleCmd
@@ -47,8 +95,6 @@ struct ConsoleCmd
   ConsoleCmd *next;
   String8 name, description, help;
 
-  // all commands should print text like OK 
-  // and return say 1 to allow for testing
   console_cmd_func func;
 };
 
@@ -58,60 +104,103 @@ struct ConsoleCmdSystem
   ConsoleCmdSystem *next;
   String8 name, description;
 
-  // local log level variable
-
   ConsoleCmd *first;
   ConsoleCmd *last;
 };
 
-// This will be a global variable?
 typedef struct Console Console;
 struct Console
 {
-  // global log level variable
+  b32 log_active;
+  LOG_LEVEL log_level;
 
   ConsoleCmdSystem *first;
   ConsoleCmdSystem *last;
 
-  // contain uart handle
+  MemArena *arena;
+
+  UART_HandleTypeDef *uart_handle;
 };
 
-INTERNAL u32
-uart_status(String8List *cmds)
+GLOBAL Console global_console;
+
+
+INTERNAL void 
+console_printf(char *fmt, ...)
 {
-  u32 result = 0;
+  va_list args;
+  va_start(args, fmt);
 
-  TempMemArena temp_mem_arena = temp_mem_arena_get(NULL, 0);
+  TempMemArena arena = temp_mem_arena_get(NULL, 0);
+  
+  String8 message = s8_fmt_nested(arena.arena, fmt, args);
+  
+  HAL_StatusTypeDef hal_status = HAL_UART_Transmit(global_console.uart_handle, 
+                                                   message.str, (u16)message.size, 500);
+  // TODO(Ryan): Add max buffer limit and indicate if reached by appending [!]
 
-  if (cmds->node_count == 2)
-  {
-    String8Node *name_arg = cmds->first;
-    ASSERT(s8_match(name_arg.string, s8_lit("uart"), S8_MATCH_FLAG_CASE_INSENSITIVE));
+  temp_mem_arena_release(arena);
 
-    String8Node *status_arg = name_arg->next;
-    if (s8_match(status_arg->string, s8_lit("status"), S8_MATCH_FLAG_CASE_INSENSITIVE))
-    {
-      String8 message = s8_lit("Status is a-okay!\n");
-      HAL_StatusTypeDef hal_status = HAL_UART_Transmit(global_console_uart_handle, message.str, (u16)message.size, 500);
-    }
-    else
-    {
-      result = 1;
-    }
-  }
-  else
-  {
-    result = 1;
-  }
-
-  temp_mem_arena_release(temp_mem_arena);
-
-  return result;
+  va_end(args);
 }
 
-// ?
-// log, log off
-// TODO: * log info (would act on all subsystems)
+INTERNAL void 
+console_printf_nested(char *fmt, va_list args)
+{
+  TempMemArena arena = temp_mem_arena_get(NULL, 0);
+  
+  String8 message = s8_fmt_nested(arena.arena, fmt, args);
+  
+  HAL_StatusTypeDef hal_status = HAL_UART_Transmit(global_console.uart_handle, 
+                                                   message.str, (u16)message.size, 500);
+  // TODO(Ryan): Add max buffer limit and indicate if reached by appending [!]
+
+}
+
+INTERNAL void
+console_log(char *fmt, ...)
+{
+  va_list args;
+  va_start(args, fmt);
+
+  u32 ms = HAL_GetTick();
+
+  console_printf("%lu.%03lu ", ms / 1000U, ms % 1000U);
+  console_printf_nested(fmt, args);
+
+  va_end(args);
+}
+
+#define LOG_ERROR(SUBSYSTEM, fmt, ...) \
+  do { \
+    if (global_console.log_active && global_console.log_level >= LOG_LEVEL_ERROR) \
+      console_log("ERROR (" STRINGIFY(SUBSYSTEM) "): " fmt, ##__VA_ARGS__); \
+  } while (0) 
+
+#define LOG_WARNING(SUBSYSTEM, fmt, ...) \
+  do { \
+    if (global_console.log_active && global_console.log_level >= LOG_LEVEL_WARNING) \
+      console_log("WARNING (" STRINGIFY(SUBSYSTEM) "): " fmt, ##__VA_ARGS__); \
+  } while (0) 
+
+#define LOG_INFO(SUBSYSTEM, fmt, ...) \
+  do { \
+    if (global_console.log_active && global_console.log_level >= LOG_LEVEL_INFO) \
+      console_log("INFO (" STRINGIFY(SUBSYSTEM) "): " fmt, ##__VA_ARGS__); \
+  } while (0) 
+
+#define LOG_DEBUG(SUBSYSTEM, fmt, ...) \
+  do { \
+    if (global_console.log_active && global_console.log_level >= LOG_LEVEL_DEBUG) \
+      console_log("DEBUG (" STRINGIFY(SUBSYSTEM) "): " fmt, ##__VA_ARGS__); \
+  } while (0) 
+
+#define LOG_VERBOSE(SUBSYSTEM, fmt, ...) \
+  do { \
+    if (global_console.log_active && global_console.log_level >= LOG_LEVEL_VERBOSE) \
+      console_log("VERBOSE (" STRINGIFY(SUBSYSTEM) "): " fmt, ##__VA_ARGS__); \
+  } while (0) 
+
 
 // uart ?, uart help
 // uart status (show clients and their rx,tx index and buffer information)
@@ -120,31 +209,95 @@ uart_status(String8List *cmds)
 // uart test
 
 INTERNAL void
-execute_console_cmd(MemArena *arena, ConsoleState *console_state, String8 cmd)
+global_console_execute_cmd(String8 raw_str)
 {
   String8 space_split = s8_lit(" ");
-  String8List cmd_tokens = s8_split(arena, cmd, &space_split, 1);
+  String8List cmd_tokens = s8_split(global_console.arena, raw_str, &space_split, 1);
 
-  String8Node *system_token = cmd_tokens.first;
-  String8Node *name_token = system_token->next;
-
-  for (ConsoleCmd *console_cmd = console_state->first;
-       console_cmd != NULL;
-       console_cmd = console_cmd->next)
+  String8Node *first_token = cmd_tokens.first;
+  // NOTE(Ryan): Handle overarching commands
+  if (cmd_tokens.node_count == 1)
   {
-    if (s8_match(system_token->string, console_cmd->system, S8_MATCH_FLAG_CASE_INSENSITIVE) &&
-        s8_match(name_token->string, console_cmd->name, S8_MATCH_FLAG_CASE_INSENSITIVE))
+    if (first_token->string.str[0] == '?')
     {
-      if (console_cmd->func(&cmd_tokens) == 1)
-      {
-        HAL_StatusTypeDef hal_status = HAL_UART_Transmit(global_console_uart_handle, console_cmd->help.str, (u16)console_cmd->help.size, 500);
-      }
-
-      break;
+      console_printf("Help\n");
+    }
+    else if (first_token->string.str[0] == '+')
+    {
+      global_console.log_active = true;
+      console_printf("Logging enabled\n");
+    }
+    else if (first_token->string.str[0] == '-')
+    {
+      global_console.log_active = false;
+      console_printf("Logging disabled\n");
+    }
+    else if (first_token->string.str[0] == '*')
+    {
+      char *log_level = log_level_str(global_console.log_level); 
+      console_printf("%s logging is %s\n", log_level, global_console.log_active ? "enabled" : "disabled");
+    } 
+    else if (s8_match(first_token->string, s8_lit("error"), S8_MATCH_FLAG_CASE_INSENSITIVE))
+    {
+      global_console.log_level = LOG_LEVEL_ERROR; 
+      console_printf("Log level set to ERROR\n");
+    }
+    else if (s8_match(first_token->string, s8_lit("warning"), S8_MATCH_FLAG_CASE_INSENSITIVE))
+    {
+      global_console.log_level = LOG_LEVEL_WARNING; 
+      console_printf("Log level set to WARNING\n");
+    }
+    else if (s8_match(first_token->string, s8_lit("info"), S8_MATCH_FLAG_CASE_INSENSITIVE))
+    {
+      global_console.log_level = LOG_LEVEL_INFO; 
+      console_printf("Log level set to INFO\n");
+    }
+    else if (s8_match(first_token->string, s8_lit("debug"), S8_MATCH_FLAG_CASE_INSENSITIVE))
+    {
+      global_console.log_level = LOG_LEVEL_DEBUG; 
+      console_printf("Log level set to DEBUG\n");
+    }
+    else if (s8_match(first_token->string, s8_lit("verbose"), S8_MATCH_FLAG_CASE_INSENSITIVE))
+    {
+      global_console.log_level = LOG_LEVEL_VERBOSE;
+      console_printf("Log level set to VERBOSE\n");
+    }
+    else
+    {
+      console_printf("Unknown command: %.*s\n", s8_varg(first_token->string));
     }
   }
+  else
+  {
+    String8Node *second_token = first_token->next;
+
+    for (ConsoleCmdSystem *console_cmd_system = global_console.first;
+         console_cmd_system != NULL;
+         console_cmd_system = console_cmd_system->next)
+    {
+      if (s8_match(first_token->string, console_cmd_system->name, S8_MATCH_FLAG_CASE_INSENSITIVE))
+      {
+        for (ConsoleCmd *console_cmd = console_cmd_system->first;
+             console_cmd != NULL;
+             console_cmd = console_cmd->next)
+        {
+          if (s8_match(second_token->string, console_cmd->name, S8_MATCH_FLAG_CASE_INSENSITIVE))
+          {
+            if (console_cmd->console_func(tokens) == CONSOLE_CMD_STATUS_FAILED)
+            {
+              console_printf("%s\n", console_cmd->help);
+            }
+          }
+        }
+      }
+
+    }
+
+  }
+
 }
-#endif
+
+GLOBAL ConsoleCmdSystem global_main_console_cmd_system;
 
 #if defined(TEST_BUILD)
 int testable_main(void)
@@ -152,27 +305,24 @@ int testable_main(void)
 int main(void)
 #endif
 {
-  // ./configure --help 
-  // ./configure --target-list="arm-softmmu"
-  // make -j$(getconf _NPROCESSORS_ONLN)
-
-  // TODO(Ryan): Add error handling
-  stm32f429zitx_initialise();
-
-  // setvbuf(stdout, NULL, _IONBF, 0);
-  // TODO(Ryan): In RAM code just calls custom printc(), so why this no buffering call? For streams?
+  if (stm32f429zitx_initialise() != STATUS_SUCCEEDED)
+  {
+    __disable_irq();
+    while (1) {}
+  }
 
   MemArena *permanent_arena = mem_arena_allocate(KB(32));
   initialise_global_temp_mem_arenas(KB(32));
 
   TempMemArena temp_arena = temp_mem_arena_get(NULL, 0);
 
+  // NOTE(Ryan): Initialise global console
   UartParams uart_params = ZERO_STRUCT;
   uart_params.tx_pin = GPIO_PIN_8;
   uart_params.rx_pin = GPIO_PIN_9;
   uart_params.af = GPIO_AF7_USART3;
   uart_params.gpio_base = GPIOD;
-  uart_params.baud_rate = 57600;
+  uart_params.baud_rate = 9600;
   uart_params.uart_base = USART3;
 
   UartResult uart_result = stm32f429zitx_initialise_uart(&uart_params);
@@ -180,7 +330,13 @@ int main(void)
   {
     while (1) {}
   }
-  global_console_uart_handle = &uart_result.handle;
+  global_console.uart_handle = &uart_result.handle;
+
+  global_console.arena = temp_arena.arena;
+  global_console.log_active = true;
+  global_console.log_level = LOG_LEVEL_VERBOSE;
+
+  LOG_INFO(main, "initialised console");
 
 #if 0
   ConsoleCmd status = ZERO_STRUCT;
@@ -279,13 +435,11 @@ int main(void)
     {
       for (size_t i = 0; i < console_buf_size; i += 1)
       {
-        char ch = console_buf[i];
-        if (ch == '\n') 
+        if (console_buf[i] == '\n') 
         {
           String8 cmd = s8_prefix(console_str, i);
-          //execute_console_cmd(temp_arena.arena, &console_state, cmd);
-        };
-        // hal_status = HAL_UART_Transmit(&uart_result.handle, console_buf + i, 1, 500);
+          global_console_execute_cmd(cmd);
+        }
       }
     }
 
@@ -300,133 +454,3 @@ int main(void)
 }
 
 
-// The log toggle char at the console is ctrl-L which is form feed, or 0x0c.
-#define LOG_TOGGLE_CHAR '\x0c'
-
-typedef u32 LOG_LEVEL;
-enum {
-  LOG_LEVEL_OFF = 0,
-  LOG_LEVEL_ERROR,
-  LOG_LEVEL_WARNING,
-  LOG_LEVEL_INFO,
-  LOG_LEVEL_DEBUG,
-  LOG_LEVEL_VERBOSE,
-  LOG_LEVEL_COUNT
-};
-
-#define LOG_LEVEL_NAMES "off, error, warning, info, debug, verbose"
-
-INTERNAL char *
-log_level_str(LOG_LEVEL log_level)
-{
-  char *result = "unknown";
-
-  switch (log_level)
-  {
-    default: break;
-    case LOG_LEVEL_OFF:
-    {
-      result = "off"; 
-    } break;
-    case LOG_LEVEL_ERROR:
-    {
-      result = "error"; 
-    } break;
-    case LOG_LEVEL_WARNING:
-    {
-      result = "warning"; 
-    } break;
-    case LOG_LEVEL_INFO:
-    {
-      result = "info"; 
-    } break;
-    case LOG_LEVEL_DEBUG:
-    {
-      result = "debug"; 
-    } break;
-    case LOG_LEVEL_VERBOSE:
-    {
-      result = "verbose"; 
-    } break;
-  }
-
-  return result;
-}
-
-INTERNAL void 
-console_printf(char *fmt, ...);
-{
-  va_list args;
-  va_start(args, fmt);
-
-  TempMemArena arena = temp_mem_arena_get(NULL, 0);
-  
-  String8 message = s8_fmt_nested(arena.arena, fmt, args);
-  
-  HAL_StatusTypeDef hal_status = HAL_UART_Transmit(global_console.uart_handle, 
-                                                   message.str, (u16)message.size, 500);
-  // TODO(Ryan): Add max buffer limit and indicate if reached by appending [!]
-
-  temp_mem_arena_release(arena);
-
-  va_end(args);
-}
-
-INTERNAL void 
-console_printf_nested(char *fmt, va_list args);
-{
-  TempMemArena arena = temp_mem_arena_get(NULL, 0);
-  
-  String8 message = s8_fmt_nested(arena.arena, fmt, args);
-  
-  HAL_StatusTypeDef hal_status = HAL_UART_Transmit(global_console.uart_handle, 
-                                                   message.str, (u16)message.size, 500);
-  // TODO(Ryan): Add max buffer limit and indicate if reached by appending [!]
-
-  temp_mem_arena_release(arena);
-}
-
-
-INTERNAL void
-console_log(char *fmt, ...)
-{
-  va_list args;
-  va_start(args, fmt);
-
-  u32 ms = HAL_GetTick();
-
-  console_printf("%lu.%03lu ", ms / 1000U, ms % 1000U);
-  console_printf_nested(fmt, args);
-
-  va_end(args);
-}
-
-#define LOG_ERROR(SUBSYSTEM, fmt, ...) \
-  do { \
-    if (global_console.log_active && global_SUBSYSTEM_cmd_system.log_level >= LOG_LEVEL_ERROR) \
-      console_log(PASTE("ERROR ", SUBSYSTEM) fmt, ##__VA_ARGS__); \
-  } while (0) 
-
-#define LOG_WARNING(SUBSYSTEM, fmt, ...) \
-  do { \
-    if (global_console.log_active && global_SUBSYSTEM_cmd_system.log_level >= LOG_LEVEL_WARNING) \
-      console_log(PASTE("WARNING ", SUBSYSTEM) fmt, ##__VA_ARGS__); \
-  } while (0) 
-
-#define LOG_INFO(SUBSYSTEM, fmt, ...) \
-  do { \
-    if (global_console.log_active && global_SUBSYSTEM_cmd_system.log_level >= LOG_LEVEL_INFO) \
-      console_log(PASTE("INFO ", SUBSYSTEM) fmt, ##__VA_ARGS__); \
-  } while (0) 
-
-#define LOG_DEBUG(SUBSYSTEM, fmt, ...) \
-  do { \
-    if (global_console.log_active && global_SUBSYSTEM_cmd_system.log_level >= LOG_LEVEL_DEBUG) \
-      console_log(PASTE("DEBUG ", SUBSYSTEM) fmt, ##__VA_ARGS__); \
-  } while (0) 
-
-#define LOG_VERBOSE(SUBSYSTEM, fmt, ...) \
-  do { \
-    if (global_console.log_active && global_SUBSYSTEM_cmd_system.log_level >= LOG_LEVEL_VERBOSE) \
-      console_log(PASTE("VERBOSE ", SUBSYSTEM) fmt, ##__VA_ARGS__); \
-  } while (0) 
