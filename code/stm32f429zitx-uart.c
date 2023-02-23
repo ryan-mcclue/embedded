@@ -39,12 +39,9 @@
 
 
 
-void USART1_IRQHandler(void)
+void 
+USART3_IRQHandler(void)
 {
-  usart_interrupt(usart_instance_1, USART1_IRQn);
-
-UART_HandleTypeDef *handle = &uart->getHandle();
-
   if (__HAL_UART_GET_FLAG(handle, UART_FLAG_RXNE)) {
     uint8_t data = uart->data_rx();
     if (rx_state) {
@@ -91,6 +88,10 @@ struct UartParams
   u32 baud_rate; 
   USART_TypeDef *uart_base;
 
+  // two interrupt possibilities:
+  //   rxne (recieve character ready)
+  //   txe (ready to transmit)
+
   // TODO(Ryan): Consider specifying interrupt priority
   /*
    * u32 rx_buf_get_idx;
@@ -103,8 +104,7 @@ struct UartParams
    * u8 *tx_buf;
    * u32 tx_buf_len;
    *
-   *
-   * STAT_UART_RX_ORE;
+   * UartStats stats; (a lot of these stats recorded might indicate bad serial connection)
    */
 };
 
@@ -279,15 +279,12 @@ static void ttys_interrupt(enum ttys_instance_id instance_id,
     }
 
     if (sr & (ORE_BIT_MASK | NE_BIT_MASK | FE_BIT_MASK | PE_BIT_MASK)) {
-        // Error bits(s) detected. First clear them out.
+        // Error bits(s) detected. First clear them out
+        // TODO(Ryan): shouldn't clear after?
 
-#if CONFIG_USART_TYPE == 1
         // Just reading the data register clears the error bits.
+        // IMPORTANT(Ryan): This seems common for most UARTS
         (void)st->uart_reg_base->DR;
-#elif (CONFIG_USART_TYPE == 2 || CONFIG_USART_TYPE == 3)
-        // Writing the error bits to the ICR clears them.
-        st->uart_reg_base->ICR = sr & 0xf;
-#endif
 
         // Record the error(s).
         if (sr & ORE_BIT_MASK)
@@ -337,6 +334,7 @@ int32_t ttys_putc(enum ttys_instance_id instance_id, char c)
     st->tx_buf_put_idx = next_put_idx;
 
     // Ensure the TX interrupt is enabled.
+    // As level interrupt we must disable, otherwise UART will keep interrupting us
     if (ttys_states[instance_id].uart_reg_base != NULL) {
         LL_USART_EnableIT_TXE(st->uart_reg_base);
     }

@@ -93,7 +93,7 @@ typedef struct ConsoleCmd ConsoleCmd;
 struct ConsoleCmd
 {
   ConsoleCmd *next;
-  String8 name, help;
+  String8 name, help; // uart status: <help> (so help should incorporate a description)
 
   console_cmd_func func;
 };
@@ -102,11 +102,16 @@ typedef struct ConsoleCmdSystem ConsoleCmdSystem;
 struct ConsoleCmdSystem
 {
   ConsoleCmdSystem *next;
-  String8 name, description;
+  String8 name; 
 
   ConsoleCmd *first;
   ConsoleCmd *last;
 };
+
+// ?
+// --> uart (status, test, etc.)
+//
+// log levels are: ...
 
 typedef struct Console Console;
 struct Console
@@ -301,7 +306,7 @@ global_console_execute_cmd(String8 raw_str)
 
 }
 
-
+// TODO(Ryan): Support 'uart ?'
 INTERNAL CONSOLE_CMD_STATUS
 console_uart_cmd_system_status_cmd(String8Node *args)
 {
