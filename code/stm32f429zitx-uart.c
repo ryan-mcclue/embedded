@@ -162,20 +162,43 @@ stm32f429zitx_initialise_uart(UartParams *uart_params)
   {
     // TODO(Ryan): Investigate savings gained by lazy loading interrupts
 
+
+    // TODO(Ryan): How can I answer/know: 
+    // "Hey you need to guarantee a response to this external command in 40ms, that seems pretty tight."
+    // "Sweet, I've got 10x what I need" (thinking 5ms is an eternity)
+    // (perhaps just knowing cycle count of CPU and average instructions in ISR?) 
+    //
+    // "And it frequently comes from someone asking how long it takes this system to boot. Oh around 600 uS"
+    //  Most of which is waiting for the power supply to settle down and send the power-good signal...
+    //  Or the PLL to lock, or the 32 khz crystal to stabilize
+    //
+    // This extends to the idea of literally powering a light bulb for a few micro seconds a time each second and sleeping in between  
+    //
+    // Seems that printf is considered resource heavy: hence lightweight-logging
+    
+    // keep in mind for interupt:
+    //   * volatile if global variable
+    //   * atomic/disable interrupts during section 
+    //   * consider interrupt priorities down the road?
+
     // __HAL_UART_ENABLE_IT(huart, UART_IT_TXE);
     // __HAL_UART_ENABLE_IT(huart, UART_IT_RXNE);
 
-// http://www.ocfreaks.com/interrupt-priority-grouping-arm-cortex-m-nvic/
-    // priorities and sub group priorities ...
-    // so instead of major.minor interrupt priorities,
-    // only have single number between 0-15
-    // HAL_NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_4);
+    // IPR registers store 4 8-bit priority fields 
+    // Within priority field, further sub-divided into group and sub-priority level 
+    // (the possible subdivisions/groupings dependant on priority groupings available on specific architecture)
+    // So, an interrupt priority in an IPR register and specific field
+    // This used to determine preemption
 
+    // Also have exception mask registers which effectively enable/disable certain interrupts
 
     // USART3_IRQn
+    
+    // lower priority value higher priority? so this is highest priority?
     // NVIC_SetPriority(irq_type,
     //                  NVIC_EncodePriority(NVIC_GetPriorityGrouping(),0, 0));
     // NVIC_EnableIRQ(irq_type);
+    
     result.status = STATUS_SUCCEEDED;
   }
 

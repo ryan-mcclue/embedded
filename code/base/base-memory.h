@@ -35,6 +35,7 @@ struct MemArena
   size_t align;
 };
 
+// TODO(Ryan): Better to zero from the get go to reduce incorrect ZII assumption errors?
 INTERNAL MemArena *
 mem_arena_allocate(size_t cap)
 {
@@ -58,7 +59,9 @@ mem_arena_deallocate(MemArena *arena)
 #define MEM_ARENA_PUSH_ARRAY(a,T,c) (T*)mem_arena_push((a), sizeof(T)*(c))
 #define MEM_ARENA_PUSH_ARRAY_ZERO(a,T,c) (T*)mem_arena_push_zero((a), sizeof(T)*(c))
 #define MEM_ARENA_POP_ARRAY(a,T,c) mem_arena_pop((a), sizeof(T)*(c))
+
 #define MEM_ARENA_PUSH_STRUCT(a,T) (T*)mem_arena_push((a), sizeof(T))
+#define MEM_ARENA_PUSH_STRUCT_ZERO(a,T) (T*)mem_arena_push_zero((a), sizeof(T))
 
 INTERNAL void *
 mem_arena_push_aligned(MemArena *arena, size_t size, size_t align)

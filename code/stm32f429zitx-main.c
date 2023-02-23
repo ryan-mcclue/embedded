@@ -84,16 +84,16 @@ log_level_str(LOG_LEVEL log_level)
 typedef u32 CONSOLE_CMD_STATUS;
 enum {
   CONSOLE_CMD_STATUS_FAILED,
-  CONSOLE_CMD_STATUS_SUCEEDED,
+  CONSOLE_CMD_STATUS_SUCCEEDED,
 };
 
-typedef CONSOLE_CMD_STATUS (*console_cmd_func)(String8List *args);
+typedef CONSOLE_CMD_STATUS (*console_cmd_func)(String8Node *node);
 
 typedef struct ConsoleCmd ConsoleCmd;
 struct ConsoleCmd
 {
   ConsoleCmd *next;
-  String8 name, description, help;
+  String8 name, help;
 
   console_cmd_func func;
 };
@@ -270,6 +270,7 @@ global_console_execute_cmd(String8 raw_str)
   else
   {
     String8Node *second_token = first_token->next;
+    String8Node *third_token = second_token->next;
 
     for (ConsoleCmdSystem *console_cmd_system = global_console.first;
          console_cmd_system != NULL;
@@ -283,18 +284,34 @@ global_console_execute_cmd(String8 raw_str)
         {
           if (s8_match(second_token->string, console_cmd->name, S8_MATCH_FLAG_CASE_INSENSITIVE))
           {
-            if (console_cmd->console_func(tokens) == CONSOLE_CMD_STATUS_FAILED)
+            if (console_cmd->func(third_token) == CONSOLE_CMD_STATUS_FAILED)
             {
               console_printf("%s\n", console_cmd->help);
             }
+
+            return;
           }
         }
       }
-
     }
+
+    console_printf("Unknown command invocation: %.*s\n", s8_varg(raw_str));
 
   }
 
+}
+
+
+INTERNAL CONSOLE_CMD_STATUS
+console_uart_cmd_system_status_cmd(String8Node *args)
+{
+  CONSOLE_CMD_STATUS result = CONSOLE_CMD_STATUS_FAILED;
+
+  console_printf("uart status command\n");
+
+  result = CONSOLE_CMD_STATUS_SUCCEEDED;
+
+  return result;
 }
 
 GLOBAL ConsoleCmdSystem global_main_console_cmd_system;
@@ -336,18 +353,20 @@ int main(void)
   global_console.log_active = true;
   global_console.log_level = LOG_LEVEL_VERBOSE;
 
-  LOG_INFO(main, "initialised console");
+  LOG_INFO(main, "initialised console\n");
 
-#if 0
-  ConsoleCmd status = ZERO_STRUCT;
-  status.system = s8_lit("uart");
-  status.name = s8_lit("status");
-  status.help = s8_lit("Print status. Usage: uart status\n");
-  status.func = uart_status;
+  ConsoleCmdSystem *uart_cmd_system = MEM_ARENA_PUSH_STRUCT_ZERO(permanent_arena, ConsoleCmdSystem);
+  uart_cmd_system->name = s8_lit("uart");
+  uart_cmd_system->description = s8_lit("Uart description");
 
-  ConsoleState console_state = ZERO_STRUCT;
-  SLL_QUEUE_PUSH(console_state.first, console_state.last, &status);
-#endif
+  ConsoleCmd *uart_cmd_system_status_cmd = MEM_ARENA_PUSH_STRUCT_ZERO(permanent_arena, ConsoleCmd);
+  uart_cmd_system_status_cmd->name = s8_lit("status");
+  uart_cmd_system_status_cmd->help = s8_lit("Prints status");
+  uart_cmd_system_status_cmd->func = console_uart_cmd_system_status_cmd;
+
+  SLL_QUEUE_PUSH(uart_cmd_system->first, uart_cmd_system->last, uart_cmd_system_status_cmd);
+  SLL_QUEUE_PUSH(global_console.first, global_console.last, uart_cmd_system);
+
 
   // systick is 1ms; not spectacular resolution
   // important to recognise possible rollover when doing elapsed time calculations
