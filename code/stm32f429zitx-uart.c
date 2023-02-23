@@ -92,6 +92,25 @@ struct UartParams
   USART_TypeDef *uart_base;
 
   // TODO(Ryan): Consider specifying interrupt priority
+  /*
+   * u32 rx_buf_get_idx;
+   * u32 rx_buf_put_idx;
+   * u8 *rx_buf;
+   * u32 rx_buf_len;
+   *
+   * u32 tx_buf_get_idx;
+   * u32 tx_buf_put_idx;
+   * u8 *tx_buf;
+   * u32 tx_buf_len;
+   *
+   *
+   * STAT_UART_RX_ORE;
+   */
+};
+
+typedef struct UartStats
+{
+  u32 rx_ore; // "uart rx overrun"
 };
 
 // TODO(Ryan): Consider changing name to UartState so as to record if active/deactive
@@ -206,7 +225,7 @@ stm32f429zitx_initialise_uart(UartParams *uart_params)
 }
 
 
-
+// critical section when loading off buffer to avoid overrun 
 
 #if 0
 
