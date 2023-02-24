@@ -5,13 +5,18 @@
 GLOBAL Console global_console;
 
 INTERNAL STATUS 
-stm32f429zitx_create_console(MemArena *perm_arena, UartParams *uart_params)
+stm32f429zitx_create_console(MemArena *perm_arena, u32 cmd_str_buf_len, UartParams *uart_params)
 {
   STATUS result = STATUS_FAILED;
 
   global_console.perm_arena = perm_arena;
   global_console.log_active = true;
   global_console.log_level = LOG_LEVEL_VERBOSE;
+
+  global_console.cmd_str_buf_len = cmd_str_buf_len;
+  global_console.cmd_str_buf_cursor = 0;
+  global_console.cmd_str.str = MEM_ARENA_PUSH_ARRAY_ZERO(perm_arena, u8, cmd_str_buf_len);
+  global_console.cmd_str.size = 0;
 
   ASSERT(__HAL_RCC_GPIOD_IS_CLK_ENABLED());
 
@@ -173,7 +178,6 @@ USART3_IRQHandler(void)
 INTERNAL void 
 console_write_ch(char ch)
 {
-  // put critical in if interrupt reading from
   CRITICAL_BEGIN();
 
   u32 next_write_index = global_console.uart_info.tx_buf_write_index + 1;
@@ -295,7 +299,12 @@ console_execute_cmd(String8 raw_str)
   {
     if (first_token->string.str[0] == '?')
     {
-      console_printf("Help\n");
+      console_printf("? (Display this information)\n");
+      console_printf("+ (Enable logging)\n");
+      console_printf("- (Disable logging)\n");
+      console_printf("Change log level by entering: %s\n", LOG_LEVEL_NAMES_STR);
+      console_printf("* (Display console info)\n");
+      // --> uart (status, test, etc.)
     }
     else if (first_token->string.str[0] == '+')
     {
@@ -311,6 +320,12 @@ console_execute_cmd(String8 raw_str)
     {
       char *log_level = log_level_str(global_console.log_level); 
       console_printf("%s logging is %s\n", log_level, global_console.log_active ? "enabled" : "disabled");
+      console_printf("RX Buffer Overrun Error: %d\n", global_console.uart_info.stats.rx_buf_overrun_err);
+      console_printf("TX Buffer Overrun Error: %d\n", global_console.uart_info.stats.tx_buf_overrun_err);
+      console_printf("RX Overrun Error: %d\n", global_console.uart_info.stats.rx_overrun_err);
+      console_printf("RX Noise Error: %d\n", global_console.uart_info.stats.rx_noise_err);
+      console_printf("RX Frame Error: %d\n", global_console.uart_info.stats.rx_frame_err);
+      console_printf("RX Parity Error: %d\n", global_console.uart_info.stats.rx_parity_err);
     } 
     else if (s8_match(first_token->string, s8_lit("error"), S8_MATCH_FLAG_CASE_INSENSITIVE))
     {

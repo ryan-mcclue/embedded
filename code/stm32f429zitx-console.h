@@ -12,7 +12,7 @@ enum {
   LOG_LEVEL_COUNT
 };
 
-#define LOG_LEVEL_NAMES "error, warning, info, debug, verbose"
+#define LOG_LEVEL_NAMES_STR "(error|warning|info|debug|verbose)"
 
 INTERNAL char *
 log_level_str(LOG_LEVEL log_level)
@@ -154,11 +154,6 @@ struct UartInfo
   UartStats stats;
 };
 
-// ?
-// --> uart (status, test, etc.)
-//
-// log levels are: ...
-
 typedef struct Console Console;
 struct Console
 {
@@ -169,6 +164,9 @@ struct Console
   ConsoleCmdSystem *last;
 
   MemArena *perm_arena;
+
+  u32 cmd_str_buf_len, cmd_str_buf_cursor;
+  String8 cmd_str;
 
   UartInfo uart_info;
 };

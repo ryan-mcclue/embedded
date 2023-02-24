@@ -72,12 +72,13 @@ int main(void)
   uart_params.rx_pin = GPIO_PIN_9;
   uart_params.af = GPIO_AF7_USART3;
   uart_params.gpio_base = GPIOD;
-  uart_params.baud_rate = 9600;
+  uart_params.baud_rate = 57600;
   uart_params.uart_base = USART3;
-  uart_params.rx_buf_len = 64;
-  uart_params.tx_buf_len = 64;
+  uart_params.rx_buf_len = 256;
+  uart_params.tx_buf_len = 256;
 
-  if (stm32f429zitx_create_console(perm_arena, &uart_params) == STATUS_FAILED)
+  u32 console_cmd_str_buf_len = 64;
+  if (stm32f429zitx_create_console(perm_arena, console_cmd_str_buf_len, &uart_params) == STATUS_FAILED)
   {
     while (1) {}
   }
@@ -168,31 +169,30 @@ int main(void)
   // Not all discovery boards have this on them, rather only have pads for you to solder your own cystal to
   // RTC can be used to timestamp data
 
-  u32 console_buf_size = 64;
-  u8 *console_buf = MEM_ARENA_PUSH_ARRAY_ZERO(perm_arena, u8, console_buf_size);
-  String8 console_str = ZERO_STRUCT;
-  console_str.str = console_buf;
-  console_str.size = 0;
-
-  u32 console_str_i = 0;
 
   // IMPORTANT(Ryan): Expect serial terminal to append newline
   while (FOREVER)
   {
+    // IMPORTANT(Ryan): First exposure to synchronisation issues
+    // UART is slow, compared to CPU frequency
+    // Therefore, can't just willy nilly print over with a small ring buffer size
     // if we were to just loop over until '\n', would get way too many buffer overruns as running way to quick
+
     char console_ch = console_read_ch();
-    if (console_ch != 0 && console_str_i < console_buf_size)
+    while (console_ch != 0 && global_console.cmd_str_buf_cursor != global_console.cmd_str_buf_len)
     {
       if (console_ch == '\n')
       {
-        console_execute_cmd(console_str);
-        console_str.size = 0;
-        console_str_i = 0;
+        console_execute_cmd(global_console.cmd_str);
+        global_console.cmd_str.size = 0;
+        global_console.cmd_str_buf_cursor = 0;
+        break;
       }
       else
       {
-        console_str.str[console_str_i++] = console_ch;
-        console_str.size += 1;
+        global_console.cmd_str.str[global_console.cmd_str_buf_cursor++] = console_ch;
+        global_console.cmd_str.size += 1;
+        console_ch = console_read_ch();
       }
     }
       // IMPORTANT(Ryan): Ozone won't load symbol if not called directly.
