@@ -74,8 +74,8 @@ int main(void)
   uart_params.gpio_base = GPIOD;
   uart_params.baud_rate = 9600;
   uart_params.uart_base = USART3;
-  uart_params.rx_buf_len = 256;
-  uart_params.tx_buf_len = 256;
+  uart_params.rx_buf_len = 64;
+  uart_params.tx_buf_len = 64;
 
   if (stm32f429zitx_create_console(perm_arena, &uart_params) == STATUS_FAILED)
   {
@@ -168,34 +168,36 @@ int main(void)
   // Not all discovery boards have this on them, rather only have pads for you to solder your own cystal to
   // RTC can be used to timestamp data
 
+  u32 console_buf_size = 64;
+  u8 *console_buf = MEM_ARENA_PUSH_ARRAY_ZERO(perm_arena, u8, console_buf_size);
+  String8 console_str = ZERO_STRUCT;
+  console_str.str = console_buf;
+  console_str.size = 0;
+
+  u32 console_str_i = 0;
+
   // IMPORTANT(Ryan): Expect serial terminal to append newline
   while (FOREVER)
   {
-    u32 console_buf_size = 64;
-    u8 *console_buf = MEM_ARENA_PUSH_ARRAY_ZERO(temp_arena.arena, u8, console_buf_size);
-
-    String8 console_str = ZERO_STRUCT;
-    console_str.str = console_buf;
-    console_str.size = console_buf_size;
-
+    // if we were to just loop over until '\n', would get way too many buffer overruns as running way to quick
     char console_ch = console_read_ch();
-    for (u32 i = 0; console_ch != 0 && i < console_buf_size; i += 1)
+    if (console_ch != 0 && console_str_i < console_buf_size)
     {
       if (console_ch == '\n')
       {
         console_execute_cmd(console_str);
+        console_str.size = 0;
+        console_str_i = 0;
       }
       else
       {
-        console_str.str[i] = console_ch;
+        console_str.str[console_str_i++] = console_ch;
+        console_str.size += 1;
       }
     }
-
       // IMPORTANT(Ryan): Ozone won't load symbol if not called directly.
       // So, unfortunately cannot call from a macro to have it easily compiled out
       // __bp();
-
-    temp_mem_arena_release(temp_arena);
   }
 
   return 0;

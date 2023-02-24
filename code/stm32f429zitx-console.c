@@ -74,6 +74,7 @@ stm32f429zitx_create_console(MemArena *perm_arena, UartParams *uart_params)
     __HAL_UART_ENABLE_IT(&global_console.uart_info.handle, UART_IT_RXNE);
 
     // TODO(Ryan): Consider if this priority is appropriate in the grand scheme of things
+    // Probably has to be as need to service UART as fast as possible to not get rx overrun errors
     NVIC_SetPriority(USART3_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 0, 0));
     NVIC_EnableIRQ(USART3_IRQn);
     
@@ -95,7 +96,7 @@ console_interrupt_handler(void)
   CRITICAL_BEGIN();
 
   // NOTE(Ryan): Put into rx buffer
-  if (status_register & UART_FLAG_RXNE) 
+  if (status_register & UART_FLAG_RXNE)
   {
     u32 next_rx_write_index = global_console.uart_info.rx_buf_write_index + 1;
     if (next_rx_write_index >= global_console.uart_info.rx_buf_len)
@@ -116,7 +117,7 @@ console_interrupt_handler(void)
   }
 
   // NOTE(Ryan): Take from tx buffer
-  if (status_register & UART_FLAG_TXE) 
+  if (status_register & UART_FLAG_TXE)
   {
     if (global_console.uart_info.tx_buf_read_index == global_console.uart_info.tx_buf_write_index)
     {
@@ -191,7 +192,7 @@ console_write_ch(char ch)
   global_console.uart_info.tx_buf[global_console.uart_info.tx_buf_write_index] = ch;
   global_console.uart_info.tx_buf_write_index = next_write_index;
 
-  // Ensure the TX interrupt is enabled.
+  // Ensure the TXE interrupt is enabled.
   __HAL_UART_ENABLE_IT(&global_console.uart_info.handle, UART_IT_TXE);
 
   CRITICAL_END();
