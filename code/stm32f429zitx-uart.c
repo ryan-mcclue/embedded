@@ -1,77 +1,23 @@
 // SPDX-License-Identifier: zlib-acknowledgement
 
-
-#if 0
-// TODO(Ryan): Make distinctions between what you define, and what is typically defined by HAL
-#define QAD_UART1_TX_PORT GPIOA
-#define QAD_UART1_TX_PIN GPIO_PIN_9
-#define QAD_UART1_TX_AF GPIO_AF7_USART1
-#define QAD_UART1_RX_PORT GPIOA
-#define QAD_UART1_RX_PIN GPIO_PIN_10
-#define QAD_UART1_RX_AF GPIO_AF7_USART1
-#define QAD_UART1_BAUDRATE 57600
-#define QAD_UART1_TX_FIFOSIZE 256
-#define QAD_UART1_RX_FIFOSIZE 256
-// higher number, lower priority
-#define QAD_IRQPRIORITY_UART1 ((uint8_t)0x09)
-
 // TODO(Ryan): Investigate cortex-m architecture like interrupt registers like PRIMASK
 
-// TODO(Ryan): So, no nested here?
-// Critical region start/end macros, when it is known that you are running at
-// the base level.
-#define CRIT_START() __disable_irq()
-#define CRIT_END() __enable_irq()
+// NOTE(Ryan): No nested interrupts at all
+#define ATOMIC_BEGIN() __disable_irq()
+#define ATOMIC_END() __enable_irq()
 
-// TODO(Ryan): So, allows nesting, i.e. NMI and HardFault
-// Critical region start/end macros, which work regardless of where you are
-// runing in a handler, or at the base level.
-#define CRIT_STATE_VAR uint32_t _primask_save
-#define CRIT_BEGIN_NEST()                       \
-    do {                                        \
-        _primask_save = __get_PRIMASK();        \
-        __set_PRIMASK(1);                       \
+// NOTE(Ryan): Using an exception mask register, allow nested interrupts in the form of NMI and HardFault
+GLOBAL volatile u32 global_primask_reg;
+#define CRITICAL_BEGIN() \
+    do { \
+        global_primask_reg = __get_PRIMASK(); \
+        __set_PRIMASK(1); \
     } while (0)
-#define CRIT_END_NEST()                         \
-    do {                                        \
-        __set_PRIMASK(_primask_save);           \
+#define CRITCAL_END() \
+    do { \
+        __set_PRIMASK(global_primask_reg); \
     } while (0)
 
-
-
-void 
-USART3_IRQHandler(void)
-{
-  if (__HAL_UART_GET_FLAG(handle, UART_FLAG_RXNE)) {
-    uint8_t data = uart->data_rx();
-    if (rx_state) {
-    	rx_fifo->push(data);
-    	// clear this to ensure it doesn't continually call the interrupt handler again
-    	__HAL_UART_CLEAR_FLAG(handle, UART_FLAG_RXNE);
-    }
-  }
-
-  if (__HAL_UART_GET_FLAG(handle, UART_FLAG_TXE)) {
-  	if (!tx_fifo->empty()) {
-      uart->data_tx(tx_fifo->pop());
-  	} else {
-  		uart->stop_tx();
-  		tx_state = PeriphInactive;
-  	}
-
-  	__HAL_UART_CLEAR_FLAG(handle, UART_FLAG_TXE);
-
-  the UART does continuously generate interrupts once the receive buffer is full - even when I stopped typing characters into PuTTY. 
-    To avoid this, I added the function LL_USART_RequestRxDataFlush() 
-    (disable interrupts in RXNE is recieve buffer is full)
-
-}
-
-void usart_interrupt(instance_id, irq_type)
-{
-  UsartState state = global_usart_state[instance_id];
-}
-#endif
 
 typedef struct UartParams UartParams;
 struct UartParams
@@ -93,6 +39,7 @@ struct UartParams
   //   txe (ready to transmit)
 
   // TODO(Ryan): Consider specifying interrupt priority
+  // #define QAD_IRQPRIORITY_UART1 ((uint8_t)0x09)
   /*
    * u32 rx_buf_get_idx;
    * u32 rx_buf_put_idx;
@@ -108,9 +55,18 @@ struct UartParams
    */
 };
 
-typedef struct UartStats
+typedef struct UartStats UartStats;
+struct UartStats
 {
-  u32 rx_ore; // "uart rx overrun"
+  // NOTE(Ryan): Software
+  u32 rx_buf_overrun_err;
+  u32 tx_buf_overrun_err;
+
+  // NOTE(Ryan): Hardware
+  u32 rx_overrun_err;
+  u32 rx_noise_err;
+  u32 rx_frame_err;
+  u32 rx_parity_err;
 };
 
 // TODO(Ryan): Consider changing name to UartState so as to record if active/deactive
@@ -181,20 +137,6 @@ stm32f429zitx_initialise_uart(UartParams *uart_params)
   {
     // TODO(Ryan): Investigate savings gained by lazy loading interrupts
 
-
-    // TODO(Ryan): How can I answer/know: 
-    // "Hey you need to guarantee a response to this external command in 40ms, that seems pretty tight."
-    // "Sweet, I've got 10x what I need" (thinking 5ms is an eternity)
-    // (perhaps just knowing cycle count of CPU and average instructions in ISR?) 
-    //
-    // "And it frequently comes from someone asking how long it takes this system to boot. Oh around 600 uS"
-    //  Most of which is waiting for the power supply to settle down and send the power-good signal...
-    //  Or the PLL to lock, or the 32 khz crystal to stabilize
-    //
-    // This extends to the idea of literally powering a light bulb for a few micro seconds a time each second and sleeping in between  
-    //
-    // Seems that printf is considered resource heavy: hence lightweight-logging
-    
     // keep in mind for interupt:
     //   * volatile if global variable
     //   * atomic/disable interrupts during section 
@@ -209,14 +151,9 @@ stm32f429zitx_initialise_uart(UartParams *uart_params)
     // So, an interrupt priority in an IPR register and specific field
     // This used to determine preemption
 
-    // Also have exception mask registers which effectively enable/disable certain interrupts
-
-    // USART3_IRQn
-    
     // lower priority value higher priority? so this is highest priority?
-    // NVIC_SetPriority(irq_type,
-    //                  NVIC_EncodePriority(NVIC_GetPriorityGrouping(),0, 0));
-    // NVIC_EnableIRQ(irq_type);
+    // NVIC_SetPriority(USART3_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 0, 0));
+    // NVIC_EnableIRQ(USART3_IRQn);
     
     result.status = STATUS_SUCCEEDED;
   }
@@ -224,157 +161,148 @@ stm32f429zitx_initialise_uart(UartParams *uart_params)
   return result;
 }
 
-
-// critical section when loading off buffer to avoid overrun 
-
 #if 0
-
-static void ttys_interrupt(enum ttys_instance_id instance_id,
-                           IRQn_Type irq_type)
+void
+USART3_IRQHandler(void)
 {
-    struct ttys_state* st;
-    uint8_t sr;
-    CRIT_STATE_VAR;
-
-    if (instance_id >= TTYS_NUM_INSTANCES)
-        return;
-
-    st = &ttys_states[instance_id];
-
-    // If instance is not open, we should not get an interrupt, but for safety
-    // just disable it.
-    if (st->uart_reg_base == NULL) {
-        NVIC_DisableIRQ(irq_type);
-        return;
-    }
-
-    sr = st->uart_reg_base->STATUS_REG;
-
-    CRIT_BEGIN_NEST();
-    if (sr & RXNE_BIT_MASK) {
-        // Got an incoming character.
-        uint16_t next_rx_put_idx = st->rx_buf_put_idx + 1;
-        if (next_rx_put_idx >= TTYS_RX_BUF_SIZE)
-            next_rx_put_idx = 0;
-        if (next_rx_put_idx == st->rx_buf_get_idx) {
-            // Need to read DR.
-            INC_SAT_U16(cnts_u16[CNT_RX_BUF_OVERRUN]);
-        } else {
-            st->rx_buf[st->rx_buf_put_idx] = st->uart_reg_base->DATA_RX_REG;
-            st->rx_buf_put_idx = next_rx_put_idx;
-        }
-    }
-    if (sr & TXE_BIT_MASK) {
-        // Can send a character.
-        if (st->tx_buf_get_idx == st->tx_buf_put_idx) {
-            // No characters to send, disable the interrrupt.
-            LL_USART_DisableIT_TXE(st->uart_reg_base);
-        } else {
-            st->uart_reg_base->DATA_TX_REG = st->tx_buf[st->tx_buf_get_idx];
-            if (st->tx_buf_get_idx < TTYS_TX_BUF_SIZE-1)
-                st->tx_buf_get_idx++;
-            else
-                st->tx_buf_get_idx = 0;
-        }
-    }
-
-    if (sr & (ORE_BIT_MASK | NE_BIT_MASK | FE_BIT_MASK | PE_BIT_MASK)) {
-        // Error bits(s) detected. First clear them out
-        // TODO(Ryan): shouldn't clear after?
-
-        // Just reading the data register clears the error bits.
-        // IMPORTANT(Ryan): This seems common for most UARTS
-        (void)st->uart_reg_base->DR;
-
-        // Record the error(s).
-        if (sr & ORE_BIT_MASK)
-            INC_SAT_U16(cnts_u16[CNT_RX_UART_ORE]);
-        if (sr & NE_BIT_MASK)
-            INC_SAT_U16(cnts_u16[CNT_RX_UART_NE]);
-        if (sr & FE_BIT_MASK)
-            INC_SAT_U16(cnts_u16[CNT_RX_UART_FE]);
-        if (sr & PE_BIT_MASK)
-            INC_SAT_U16(cnts_u16[CNT_RX_UART_PE]);
-
-#if CONFIG_USART_TYPE == 2
-        // TODO Needed?
-        sr = st->uart_reg_base->ISR;
-#endif
-
-    }
-    CRIT_END_NEST();
+  console_interrupt_handler();
 }
 
+//  the UART does continuously generate interrupts once the receive buffer is full - even when I stopped typing characters into PuTTY. 
+//    To avoid this, I added the function LL_USART_RequestRxDataFlush() 
+//    (disable interrupts in RXNE is recieve buffer is full)
 
-int32_t ttys_putc(enum ttys_instance_id instance_id, char c)
+INTERNAL void 
+console_interrupt_handler(void)
 {
-    struct ttys_state* st;
-    uint16_t next_put_idx;
-    CRIT_STATE_VAR;
+  u32 status_register = global_console.uart_handle->Instance->SR;
 
-    if (instance_id >= TTYS_NUM_INSTANCES)
-        return MOD_ERR_BAD_INSTANCE;
-    st = &ttys_states[instance_id];
+  CRITICAL_BEGIN();
 
-    // Calculate the new TX buffer put index
-    CRIT_BEGIN_NEST();
-    next_put_idx = st->tx_buf_put_idx + 1;
-    if (next_put_idx >= TTYS_TX_BUF_SIZE)
-        next_put_idx = 0;
-
-    // If buffer is full, then return error.
-    while (next_put_idx == st->tx_buf_get_idx) {
-        INC_SAT_U16(cnts_u16[CNT_TX_BUF_OVERRUN]);
-        CRIT_END_NEST();
-        return MOD_ERR_BUF_OVERRUN;
+  // NOTE(Ryan): Put into rx buffer
+  if (status_register & UART_FLAG_RXNE) 
+  {
+    u32 next_rx_write_index = global_console.rx_buf_write_index + 1;
+    if (next_rx_write_index >= global_console.rx_buf_len)
+    {
+      next_rx_write_index = 0;
     }
 
-    // Put the char in the TX buffer.
-    st->tx_buf[st->tx_buf_put_idx] = c;
-    st->tx_buf_put_idx = next_put_idx;
-
-    // Ensure the TX interrupt is enabled.
-    // As level interrupt we must disable, otherwise UART will keep interrupting us
-    if (ttys_states[instance_id].uart_reg_base != NULL) {
-        LL_USART_EnableIT_TXE(st->uart_reg_base);
+    if (next_rx_write_index == global_console.rx_buf_read_index)
+    {
+      // Need to read DR.
+      INC_SATURATE_U16(global_console.stats.rx_buf_overrun_err);
+    } 
+    else 
+    {
+      global_console.rx_buf[global_console.rx_buf_write_index] = global_console.uart_handle->Instance->DR;
+      global_console.rx_buf_write_index = next_rx_write_index;
     }
-    CRIT_END_NEST();
-    return 0;
+  }
+
+  // NOTE(Ryan): Take from tx buffer
+  if (status_register & UART_FLAG_TXE) 
+  {
+    if (global_console.tx_buf_read_index == global_console.tx_buf_write_index)
+    {
+      // No characters to send, disable the interrrupt.
+      LL_USART_DisableIT_TXE(global_console.uart_reg_base);
+    } 
+    else 
+    {
+      global_console.uart_handle->Instance->TX = global_console.tx_buf[global_console.tx_buf_read_index];
+      if (global_console.tx_buf_read_index < (global_console.tx_buf_len - 1))
+      {
+        global_console.tx_buf_read_index++;
+      }
+      else
+      {
+        global_console.tx_buf_read_index = 0;
+      }
+    }
+  }
+
+  if (status_register & (UART_FLAG_ORE | UART_FLAG_NE | UART_FLAG_FE | UART_FLAG_PE)) 
+  {
+    // Just reading the data register clears the error bits.
+    // IMPORTANT(Ryan): This seems common for most UARTS
+    (void)global_console.uart_handle->Instance->DR;
+
+    if (status_register & UART_FLAG_ORE)
+    {
+      INC_SATURATE_U16(global_console.stats.rx_overrun_err);
+    }
+    else if (status_register & UART_FLAG_NE)
+    {
+      INC_SATURATE_U16(global_console.stats.rx_noise_err);
+    }
+    else if (status_register & UART_FLAG_FE)
+    {
+      INC_SATURATE_U16(global_console.stats.rx_frame_err);
+    }
+    else if (status_register & UART_FLAG_PE)
+    {
+      INC_SATURATE_U16(global_console.stats.rx_parity_err);
+    }
+  }
+  
+  CRITICAL_END();
 }
 
-/*
- * @brief Get a received character.
- *
- * @param[in] instance_id Identifies the ttys instance.
- * @param[out] c Received character.
- *
- * @return Number of characters returned (0 or 1)
- */
-int32_t ttys_getc(enum ttys_instance_id instance_id, char* c)
+INTERNAL void 
+console_write_ch(Console *console, char ch)
 {
-    struct ttys_state* st;
-    int32_t next_get_idx;
-    CRIT_STATE_VAR;
+  // put critical in if interrupt reading from
+  CRITICAL_BEGIN();
 
-    if (instance_id >= TTYS_NUM_INSTANCES)
-        return MOD_ERR_BAD_INSTANCE;
+  u32 next_write_index = console->tx_buf_write_index + 1;
+  if (next_write_index >= console->tx_buf_len)
+  {
+    next_write_index = 0;
+  }
 
-    st = &ttys_states[instance_id];
+  if (next_write_index == console->tx_buf_read_index) 
+  {
+    INC_SATURATE_U16(console->stats.tx_buf_overrun_err);
+    CRITICAL_END();
+    return;
+  }
 
-    // Check if buffer is empty.
-    CRIT_BEGIN_NEST();
-    if (st->rx_buf_get_idx == st->rx_buf_put_idx) {
-        CRIT_END_NEST();
-        return 0;
-    }
+  console->tx_buf[console->tx_buf_write_index] = ch;
+  console->tx_buf_write_index = next_write_index;
 
-    // Get a character and advance get index.
-    next_get_idx = st->rx_buf_get_idx + 1;
-    if (next_get_idx >= TTYS_RX_BUF_SIZE)
-        next_get_idx = 0;
-    *c = st->rx_buf[st->rx_buf_get_idx];
-    st->rx_buf_get_idx = next_get_idx;
-    CRIT_END_NEST();
-    return 1;
+  // Ensure the TX interrupt is enabled.
+  if (ttys_states[instance_id].uart_reg_base != NULL) {
+    LL_USART_EnableIT_TXE(st->uart_reg_base);
+  }
+
+  CRITICAL_END();
+}
+
+INTERNAL char
+console_read_ch(Console *console, char ch)
+{
+  char result = 0;
+
+  CRITICAL_BEGIN();
+
+  if (console->rx_buf_read_index == console->rx_buf_write_index)
+  {
+    CRITICAL_END();
+    return result;
+  }
+
+  u32 next_read_index = console->rx_buf_read_index + 1;
+  if (next_read_index >= console.rx_buf_len)
+  {
+    next_read_index = 0;
+  }
+
+  result = console->rx_buf[console->rx_buf_read_index];
+  console->rx_buf_read_index = next_read_index;
+
+  CRITICAL_END();
+
+  return result;
 }
 #endif

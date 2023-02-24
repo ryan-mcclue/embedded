@@ -362,7 +362,6 @@ int main(void)
 
   ConsoleCmdSystem *uart_cmd_system = MEM_ARENA_PUSH_STRUCT_ZERO(permanent_arena, ConsoleCmdSystem);
   uart_cmd_system->name = s8_lit("uart");
-  uart_cmd_system->description = s8_lit("Uart description");
 
   ConsoleCmd *uart_cmd_system_status_cmd = MEM_ARENA_PUSH_STRUCT_ZERO(permanent_arena, ConsoleCmd);
   uart_cmd_system_status_cmd->name = s8_lit("status");

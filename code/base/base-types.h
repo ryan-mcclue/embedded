@@ -322,6 +322,10 @@ INTERNAL void __bp(void) {}
 #define TRILLION(x) ((x)*1000000000000LL)
 #define PICO_TO_SEC(x) ((x)*1000000000000ULL)
 
+#define INC_SATURATE_U8(x) ((x) = ((x) >= (MAX_U8) ? (MAX_U8) : (x + 1)))
+#define INC_SATURATE_U16(x) ((x) = ((x) >= (MAX_U16) ? (MAX_U16) : (x + 1)))
+#define INC_SATURATE_U32(x) ((x) = ((x) >= (MAX_U32) ? (MAX_U32) : (x + 1)))
+
 #include <stdio.h>
 #define PRINT_INT(i) printf("%s = %d\n", STRINGIFY(i), (int)(i))
 
