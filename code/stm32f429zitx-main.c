@@ -35,6 +35,7 @@
 #include "stm32f429zitx-config.h"
 #include "stm32f429zitx-boot.h"
 #include "stm32f429zitx-console.c"
+#include "stm32f429zitx-timer.c"
 
 // TODO(Ryan): Support 'uart ?'
 INTERNAL CONSOLE_CMD_STATUS
@@ -49,7 +50,11 @@ console_uart_cmd_system_status_cmd(String8Node *args)
   return result;
 }
 
-GLOBAL ConsoleCmdSystem global_main_console_cmd_system;
+INTERNAL void
+printing_timer_cb(u32 timer_id, void *data)
+{
+  LOG_INFO("Hi from timer!\n");
+}
 
 #if defined(TEST_BUILD)
 int testable_main(void)
@@ -82,8 +87,9 @@ int main(void)
   {
     while (1) {}
   }
+  LOG_DEBUG("Console created\n");
 
-  LOG_INFO(main, "created console\n");
+
 
   // add commands now
   ConsoleCmdSystem *uart_cmd_system = MEM_ARENA_PUSH_STRUCT_ZERO(perm_arena, ConsoleCmdSystem);
@@ -98,8 +104,9 @@ int main(void)
   SLL_QUEUE_PUSH(global_console.first, global_console.last, uart_cmd_system);
 
 
-  // systick is 1ms; not spectacular resolution
-  // important to recognise possible rollover when doing elapsed time calculations
+  stm32f429zitx_create_timers(perm_arena, 5); 
+  u32 printing_timer_id = timer_create(1000, true, printing_timer_cb, NULL);
+ 
 
   // GPIO_MODE_EVT_FALLING
   // an event is a software controlled flow control mechanism
@@ -195,6 +202,9 @@ int main(void)
         console_ch = console_read_ch();
       }
     }
+
+    timers_update();
+
       // IMPORTANT(Ryan): Ozone won't load symbol if not called directly.
       // So, unfortunately cannot call from a macro to have it easily compiled out
       // __bp();

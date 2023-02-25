@@ -93,6 +93,8 @@ stm32f429zitx_create_console(MemArena *perm_arena, u32 cmd_str_buf_len, UartPara
 //    To avoid this, I added the function LL_USART_RequestRxDataFlush() 
 //    (disable interrupts in RXNE is recieve buffer is full)
 
+// IMPORTANT(Ryan): Buffering important to prevent blocking and possible loss of characters
+
 INTERNAL void 
 console_interrupt_handler(void)
 {
@@ -304,6 +306,7 @@ console_execute_cmd(String8 raw_str)
       console_printf("- (Disable logging)\n");
       console_printf("Change log level by entering: %s\n", LOG_LEVEL_NAMES_STR);
       console_printf("* (Display console info)\n");
+      console_printf("test (Display test message)\n");
       // --> uart (status, test, etc.)
     }
     else if (first_token->string.str[0] == '+')
@@ -327,6 +330,10 @@ console_execute_cmd(String8 raw_str)
       console_printf("RX Frame Error: %d\n", global_console.uart_info.stats.rx_frame_err);
       console_printf("RX Parity Error: %d\n", global_console.uart_info.stats.rx_parity_err);
     } 
+    else if (s8_match(first_token->string, s8_lit("test"), S8_MATCH_FLAG_CASE_INSENSITIVE))
+    {
+      console_printf("Test\n");
+    }
     else if (s8_match(first_token->string, s8_lit("error"), S8_MATCH_FLAG_CASE_INSENSITIVE))
     {
       global_console.log_level = LOG_LEVEL_ERROR; 

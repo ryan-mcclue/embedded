@@ -47,34 +47,34 @@ log_level_str(LOG_LEVEL log_level)
   return result;
 }
 
-#define LOG_ERROR(SUBSYSTEM, fmt, ...) \
+#define LOG_ERROR(fmt, ...) \
   do { \
-    if (global_console.log_active && global_console.log_level >= LOG_LEVEL_ERROR) \
-      console_log("ERROR (" STRINGIFY(SUBSYSTEM) "): " fmt, ##__VA_ARGS__); \
+    if (global_console.log_active) \
+      console_log("ERROR: " fmt, ##__VA_ARGS__); \
   } while (0) 
 
-#define LOG_WARNING(SUBSYSTEM, fmt, ...) \
+#define LOG_WARNING(fmt, ...) \
   do { \
     if (global_console.log_active && global_console.log_level >= LOG_LEVEL_WARNING) \
-      console_log("WARNING (" STRINGIFY(SUBSYSTEM) "): " fmt, ##__VA_ARGS__); \
+      console_log("WARNING: " fmt, ##__VA_ARGS__); \
   } while (0) 
 
-#define LOG_INFO(SUBSYSTEM, fmt, ...) \
+#define LOG_INFO(fmt, ...) \
   do { \
     if (global_console.log_active && global_console.log_level >= LOG_LEVEL_INFO) \
-      console_log("INFO (" STRINGIFY(SUBSYSTEM) "): " fmt, ##__VA_ARGS__); \
+      console_log("INFO: " fmt, ##__VA_ARGS__); \
   } while (0) 
 
-#define LOG_DEBUG(SUBSYSTEM, fmt, ...) \
+#define LOG_DEBUG(fmt, ...) \
   do { \
     if (global_console.log_active && global_console.log_level >= LOG_LEVEL_DEBUG) \
-      console_log("DEBUG (" STRINGIFY(SUBSYSTEM) "): " fmt, ##__VA_ARGS__); \
+      console_log("DEBUG: " fmt, ##__VA_ARGS__); \
   } while (0) 
 
-#define LOG_VERBOSE(SUBSYSTEM, fmt, ...) \
+#define LOG_VERBOSE(fmt, ...) \
   do { \
     if (global_console.log_active && global_console.log_level >= LOG_LEVEL_VERBOSE) \
-      console_log("VERBOSE (" STRINGIFY(SUBSYSTEM) "): " fmt, ##__VA_ARGS__); \
+      console_log("VERBOSE: " fmt, ##__VA_ARGS__); \
   } while (0) 
 
 

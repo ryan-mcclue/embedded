@@ -25,7 +25,7 @@ typedef double f64;
 #include <stdbool.h>
 
 #define GLOBAL static
-#define LOCAL static
+#define LOCAL_PERSIST static
 #if !defined(TEST_BUILD)
  #define INTERNAL static
 #else
