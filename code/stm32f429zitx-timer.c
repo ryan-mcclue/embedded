@@ -121,3 +121,101 @@ timers_update(void)
     }
   }
 }
+
+static int32_t cmd_tmr_status(int32_t argc, const char** argv)
+{
+    uint32_t idx;
+    uint32_t now_ms = tmr_get_ms();
+
+    printf("SysTick->CTRL=0x%08lx\n", SysTick->CTRL); // TODO REMOVE
+    printf("Current millisecond tmr=%lu\n\n", now_ms);
+
+    printf("ID   Period   Start time Time left  CB User data  State\n");
+    printf("-- ---------- ---------- ---------- -- ---------- ------\n");
+    for (idx = 0; idx < TMR_NUM_INST; idx++) {
+        struct tmr_inst_info* ti = &tmrs[idx];
+        if (ti->state == TMR_UNUSED)
+            continue;
+        printf("%2lu %10lu %10lu %10lu %2s %10lu %s\n", idx, ti->period_ms,
+               ti->start_time,
+               ti->state == TMR_RUNNING ? 
+               ti->period_ms - (now_ms - ti->start_time) : 0,
+               ti->cb_func == NULL ? "N" : "Y",
+               ti->cb_user_data,
+               tmr_state_str(ti->state));
+    }
+    return 0;
+}
+
+static int32_t cmd_tmr_test(int32_t argc, const char** argv)
+{
+    struct cmd_arg_val arg_vals[2];
+    uint32_t param1;
+    uint32_t param2 = 0;
+    int32_t rc;
+
+    // Handle help case.
+    if (argc == 2) {
+        printf("Test operations and param(s) are as follows:\n"
+               "  Get a non-callback tmr, usage: tmr test get <ms>\n"
+               "  Get a callback tmr, usage: tmr test get_cb <ms> <cb-user-data>\n"
+               "  Start a tmr, usage: tmr test start <tmr-id> <ms>\n"
+               "  Release a tmr, usage: tmr test release <tmr-id>\n"
+               "  Check if expired, usage: tmr test is_expired <tmr-id>\n");
+        return 0;
+    }
+
+    if (argc < 4) {
+        printf("Insufficent arguments\n");
+        return MOD_ERR_BAD_CMD;
+    }
+
+    // Initial argument checking.
+    if (strcasecmp(argv[2], "get_cb") == 0 ||
+        strcasecmp(argv[2], "start") == 0) {
+        if (cmd_parse_args(argc-3, argv+3, "uu", arg_vals) != 2)
+            return MOD_ERR_BAD_CMD;
+        param2 = arg_vals[1].val.u;
+    } else {
+        if (cmd_parse_args(argc-3, argv+3, "u", arg_vals) != 1)
+            return MOD_ERR_BAD_CMD;
+    }
+    param1 = arg_vals[0].val.u;
+
+    if (strcasecmp(argv[2], "get") == 0) {
+        // command: tmr test get <ms>
+        rc = tmr_inst_get(param1);
+    } else if (strcasecmp(argv[2], "get_cb") == 0) {
+        // command: tmr test get_cb <ms> <cb_user_data>
+        rc = tmr_inst_get_cb(param1, test_cb_func, param2);
+    } else if (strcasecmp(argv[2], "start") == 0) {
+        // command: tmr test start <id> <ms>
+        rc = tmr_inst_start(param1, param2);
+    } else if (strcasecmp(argv[2], "release") == 0) {
+        // command: tmr test release <id>
+        rc = tmr_inst_release(param1);
+    } else if (strcasecmp(argv[2], "is_expired") == 0) {
+        // command: tmr test is_expired <id>
+        rc = tmr_inst_is_expired(param1);
+    } else {
+        printf("Invalid operation '%s'\n", argv[2]);
+        return MOD_ERR_BAD_CMD;
+    }
+    printf("Operation returns %ld\n", rc);
+    return 0;
+}
+
+/*
+ * @brief Timer callback function for "tmr test" command.
+ *
+ * @param[in] tmr_id Timer ID.
+ * @param[in] user_data User callback data.
+ *
+ * @return TMR_CB_RESTART or TMR_CB_NONE based on test logic.
+ */
+static enum tmr_cb_action test_cb_func(int32_t tmr_id, uint32_t user_data)
+{
+    log_debug("test_cb_func(tmr_id=%d user_data=%lu\n",
+              tmr_id, user_data);
+    return user_data == 0 ? TMR_CB_RESTART : TMR_CB_NONE;
+}
