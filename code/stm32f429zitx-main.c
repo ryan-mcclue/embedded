@@ -203,7 +203,7 @@ int main(void)
       }
     }
 
-    timers_update();
+    //timers_update();
 
       // IMPORTANT(Ryan): Ozone won't load symbol if not called directly.
       // So, unfortunately cannot call from a macro to have it easily compiled out

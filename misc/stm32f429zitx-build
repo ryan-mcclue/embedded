@@ -222,6 +222,7 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
 
     arm-none-eabi-objcopy -O binary build/${param_mcu}-target-${param_mode}.elf build/${param_mcu}-target-${param_mode}.bin
     arm-none-eabi-objcopy -O ihex build/${param_mcu}-target-${param_mode}.elf build/${param_mcu}-target-${param_mode}.hex
+
   fi
 
 
