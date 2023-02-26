@@ -8,9 +8,8 @@
 #include <fcntl.h>
 #include <termios.h>
 #include <sys/file.h>
+#include <sys/ioctl.h>
 
-#define SERIAL_PORT "/dev/ttyACM0"
-#define BAUD_RATE B57600
 
 GLOBAL int global_serial_fd;
 GLOBAL String8 global_serial_output;
@@ -46,7 +45,7 @@ readx(int fd, void *buf, size_t count)
 }
 
 INTERNAL char *
-execute_serial_cmd(String8 input)
+execute_serial_cmd(String8 input, u32 min_wait_time, u32 max_wait_time)
 {
 	writex(global_serial_fd, input.str, input.size);
 
@@ -66,26 +65,26 @@ test_console(void **state)
   assert_string_equal(execute_serial_cmd(s8_lit("test\n")), "Test\n");
 }
 
+#define SERIAL_PORT "/dev/ttyACM0"
+#define BAUD_RATE B57600
 
-int
-main(int argc, char **argv)
+INTERNAL void
+initialise_serial_port(char *serial_port, u32 baud_rate, u32 read_timeout)
 {
-  // normal user to 'dialout' group
-  
   // IMPORTANT(Ryan): If specifying non-blocking arguments in here can affect VTIM
   // and result in 'resource temporarily unavaiable'
-	global_serial_fd = open(SERIAL_PORT, O_RDWR);
+	global_serial_fd = open(serial_port, O_RDWR);
 	if (global_serial_fd < 0) 
   {
-    fprintf(stderr, "Error: opening serial port " SERIAL_PORT " failed (%s)\n", strerror(errno));
-		return -1;
+    fprintf(stderr, "Error: opening serial port %s failed (%s)\n", serial_port, strerror(errno));
+		exit(1);
 	}
 
 	struct termios serial_options = {0};
 	if (tcgetattr(global_serial_fd, &serial_options) == -1)
   {
     fprintf(stderr, "Error: obtaining original serial port settings failed (%s)\n", strerror(errno));
-		return -1;
+		exit(1);
   }
 
   // NOTE(Ryan): Important to alter specific bits to avoid undefined behaviour 
@@ -130,40 +129,54 @@ main(int argc, char **argv)
   serial_options.c_oflag &= ~ONLCR; // Prevent conversion of newline to carriage return/line feed
 
   // whther blocking or not determined with VMIN and VTIME
-  serial_options.c_cc[VTIME] = (10 * 10);    // Wait for up to 1s (10 deciseconds), returning as soon as any data is received.
+  serial_options.c_cc[VTIME] = (read_timeout * 10);    // Wait for up to deciseconds, returning as soon as any data is received.
   serial_options.c_cc[VMIN] = 0;
 
   cfsetspeed(&serial_options, BAUD_RATE);
 
 	if (tcsetattr(global_serial_fd, TCSANOW, &serial_options) == -1)
   {
-    fprintf(stderr, "Error: setting serial port baud rate to " STRINGIFY(BAUD_RATE) " failed (%s)\n", strerror(errno));
-		return -1;
+    fprintf(stderr, "Error: setting serial port baud rate to %d failed (%s)\n", baud_rate, strerror(errno));
+		exit(1);
   }
 
   if (flock(global_serial_fd, LOCK_EX | LOCK_NB) == -1)
   {
-    fprintf(stderr, "Error: obtaining exclusive access to " SERIAL_PORT " failed (%s)\n", strerror(errno));
-		return -1;
+    fprintf(stderr, "Error: obtaining exclusive access to %s failed (%s)\n", serial_port, strerror(errno));
   }
+}
 
-  // See if there are bytes available to read
-  // int bytes;
-  // ioctl(fd, FIONREAD, &bytes);
+int
+main(int argc, char **argv)
+{
+  // NOTE(Ryan): For non-root access, user must be part of 'dialout' group
+  initialise_serial_port("/dev/ttyACM0", B57600, 1);
 
   MemArena *perm_arena = mem_arena_allocate(GB(1));
 
   global_serial_output_len = KB(1); 
   global_serial_output.str = MEM_ARENA_PUSH_ARRAY(perm_arena, u8, global_serial_output_len); 
 
-  printf("Waiting for input\n");
+  
+  // execute_cmd(str, min_wait_time, max_wait_time);
 
+  String8 s = s8_lit("test\n");
+  writex(global_serial_fd, s.str, s.size); 
+
+  // -1 to account for NULL terminator byte included
+  u32 bytes_expected = sizeof("Test\n") - 1;
+  u32 bytes_available = 0;
+  while (bytes_available != bytes_expected)
+  {
+    ioctl(global_serial_fd, FIONREAD, &bytes_available);
+  }
+  
 	size_t bytes_read = readx(global_serial_fd, 
                             global_serial_output.str, 
-                            5);
+                            bytes_expected);
+  global_serial_output.size = bytes_read;
 
   printf("Recieved: %.*s\n", s8_varg(global_serial_output));
-
   // TODO(Ryan): must check amount of bytes read as say after 5 seconds want 10 bytes, 8 bytes might be available
   // i.e. read reads UP TO count bytes
 
