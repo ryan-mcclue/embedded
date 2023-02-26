@@ -212,6 +212,7 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
     '
 
   else
+    # TODO(Ryan): Investigate fuzz testing also
     gcc ${hil_compiler_flags[*]} \
       tests/${param_mcu}-hil.c -o build/${param_mcu}-hil-${param_mode} \
       ${hil_linker_flags[*]}
