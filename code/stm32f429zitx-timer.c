@@ -122,6 +122,7 @@ timers_update(void)
   }
 }
 
+#if 0
 static int32_t cmd_tmr_status(int32_t argc, const char** argv)
 {
     uint32_t idx;
@@ -219,3 +220,4 @@ static enum tmr_cb_action test_cb_func(int32_t tmr_id, uint32_t user_data)
               tmr_id, user_data);
     return user_data == 0 ? TMR_CB_RESTART : TMR_CB_NONE;
 }
+#endif

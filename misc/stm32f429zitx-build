@@ -64,6 +64,8 @@ test_linker_flags=()
 # TODO(Ryan): Simulator
 # simulator_compiler_flags=()
 # simulator_linker_flags=()
+hil_compiler_flags=()
+hil_linker_flags=()
 
 if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$param_mcu" == "stm32f429zitx" && "$build_os" == "linux" ]]; then
 
@@ -99,6 +101,10 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
 
   target_linker_flags+=( "-Wl,--gc-sections" "-lc" "-lm" )
 
+  hil_compiler_flags=( "${target_compiler_flags[@]}" )
+  hil_linker_flags=( "${target_linker_flags[@]}" )
+  hil_linker_flags+=( "-lcmocka" )
+
   # NOTE(Ryan): BSP includes
   hal_path="stm32f429zitx-bsp/Drivers/STM32F4xx_HAL_Driver"
   target_compiler_flags+=( "-DUSE_HAL_DRIVER" "-DSTM32F429xx" ) 
@@ -110,6 +116,7 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
   # IMPORTANT(Ryan): Have to macro-out inline assembly found in CMSIS files that only detect gcc, not arm-gcc
   test_compiler_flags=("${target_compiler_flags[@]}")
   test_compiler_flags+=( "-Wno-padded" "-Wno-conversion" "-I tests" "-DTEST_BUILD" )
+  hil_compiler_flags+=( "-Wno-padded" "-Wno-conversion" "-Wno-sign-conversion" "-Wno-sign-compare" "-I tests" "-DTEST_BUILD" )
   test_linker_flags=("${target_linker_flags[@]}")
   test_linker_flags+=( "-lcmocka" "-Wl,--warn-unresolved-symbols" )
 
@@ -133,6 +140,7 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
     common_debug_flags=( "-Wno-unused-function" "-Wno-unused-variable"  "-Wno-unused-but-set-variable" "-Wno-unused-parameter" "-Wno-unused-result" )
     common_debug_flags+=( "-DDEBUG_BUILD" "-g3" "-gdwarf-2" "-O0" )
     target_compiler_flags+=( "${common_debug_flags[@]}" )
+    hil_compiler_flags+=( "${common_debug_flags[@]}" )
     test_compiler_flags+=( "${common_debug_flags[@]}" "--coverage" )
     simulator_compiler_flags+=( "${common_debug_flags[@]}" )
 
@@ -140,6 +148,7 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
     common_release_flags=( "-DRELEASE_BUILD" "-Os" "-ffast-math" "-fipa-pta" )
     target_compiler_flags+=( "${common_release_flags[@]}" ) 
     test_compiler_flags+=( "${common_release_flags[@]}" ) 
+    hil_compiler_flags+=( "${common_release_flags[@]}" ) 
     simulator_compiler_flags+=( "${common_release_flags[@]}" )
 
   else
@@ -148,6 +157,7 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
 
   # TODO(Ryan): Don't run coverage if in a release build
   if [[ "$BUILD_TYPE" == "tests" ]]; then
+
 
     # TODO(Ryan): Mock setup
     # determine container-id from running container and $(docker container ls)
@@ -163,6 +173,8 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
 
     # TODO(Ryan): Incorporate application code into compile
     # NOTE(Ryan): This generates .gcno files
+
+    : '
     
     test_linker_flags+=( "-Wl,--wrap=HAL_Init" "-Wl,--wrap=SystemClock_Config" )
 
@@ -197,7 +209,13 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
     else
       echo "$test_output"
     fi
+    '
+
   else
+    gcc ${hil_compiler_flags[*]} \
+      tests/${param_mcu}-hil.c -o build/${param_mcu}-hil-${param_mode} \
+      ${hil_linker_flags[*]}
+
     arm-none-eabi-gcc ${target_compiler_flags[*]} \
       code/${param_mcu}-main.c -o build/${param_mcu}-target-${param_mode}.elf \
       ${target_linker_flags[*]}
