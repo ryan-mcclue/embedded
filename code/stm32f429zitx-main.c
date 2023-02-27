@@ -36,6 +36,7 @@
 #include "stm32f429zitx-boot.h"
 #include "stm32f429zitx-console.c"
 #include "stm32f429zitx-timer.c"
+#include "stm32f429zitx-dio.c"
 
 // TODO(Ryan): Support 'uart ?'
 INTERNAL CONSOLE_CMD_STATUS
@@ -104,7 +105,15 @@ int main(void)
   stm32f429zitx_create_timers(perm_arena, 5); 
   timer_add_console_cmds();
  
-
+  dio_init(perm_arena, 10);
+  GPIO_InitTypeDef init = ZERO_STRUCT;
+  init.Pin = GPIO_PIN_2;
+  init.Mode = GPIO_MODE_OUTPUT_PP;
+  init.Pull = GPIO_NOPULL;
+  init.Speed = GPIO_SPEED_FREQ_HIGH;
+  u32 index = dio_add_output(s8_lit("green led"), &init, GPIOG, 0);
+  dio_output_set(index, 1);
+  
   // digital IO
   // for electronics, anode is where current flows in, so positive.
   // longer lead for LED
