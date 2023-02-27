@@ -9,11 +9,37 @@
 #include <termios.h>
 #include <sys/file.h>
 #include <sys/ioctl.h>
+#include <time.h>
 
+
+#define SERIAL_PORT "/dev/ttyACM0"
+#define BAUD_RATE B57600
 
 GLOBAL int global_serial_fd;
 GLOBAL String8 global_serial_output;
 GLOBAL size_t global_serial_output_len;
+
+INTERNAL u64
+get_ms(void)
+{
+  u64 result = 0;
+
+  struct timespec time_spec = {0};
+  clock_gettime(CLOCK_MONOTONIC_RAW, &time_spec);
+
+  result = (time_spec.tv_sec * 1000LL) + (time_spec.tv_nsec / 1000000.0f);
+
+  return result;
+}
+
+void
+sleep_ms(int ms)
+{
+  struct timespec sleep_time = {0};
+  sleep_time.tv_nsec = ms * 1000000;
+  struct timespec leftover_sleep_time = {0};
+  nanosleep(&sleep_time, &leftover_sleep_time);
+}
 
 
 INTERNAL void
@@ -44,29 +70,55 @@ readx(int fd, void *buf, size_t count)
   return bytes_read;
 }
 
-INTERNAL char *
-execute_serial_cmd(String8 input, u32 min_wait_time, u32 max_wait_time)
+INTERNAL void 
+execute_test(String8 input, String8 output, u32 max_wait_time_ms)
 {
 	writex(global_serial_fd, input.str, input.size);
 
-	// sleep(5);
+  u32 bytes_expected = output.size;
+
+  u64 start_time_ms = get_ms();
+  u32 bytes_available = 0;
+  while (bytes_available != bytes_expected)
+  {
+    ioctl(global_serial_fd, FIONREAD, &bytes_available);
+   
+    if (get_ms() - start_time_ms >= max_wait_time_ms)
+    {
+      break;
+    }
+  }
+
+  assert_int_equal(bytes_available, bytes_expected);
+  
 	size_t bytes_read = readx(global_serial_fd, 
                             global_serial_output.str, 
-                            global_serial_output_len);
+                            bytes_expected);
   global_serial_output.str[bytes_read] = '\0';
   global_serial_output.size = bytes_read;
 
-  return (char *)global_serial_output.str;
+  // NOTE(Ryan): The output string must be null terminated
+  assert_string_equal(output.str, global_serial_output.str);
 }
 
 INTERNAL void
 test_console(void **state)
 {
-  assert_string_equal(execute_serial_cmd(s8_lit("test\n")), "Test\n");
+  execute_test(s8_lit("test\n"), s8_lit("Test\n"), 500);
 }
 
-#define SERIAL_PORT "/dev/ttyACM0"
-#define BAUD_RATE B57600
+INTERNAL void
+disable_logging(void)
+{
+  String8 input = s8_lit("-\n");
+	writex(global_serial_fd, input.str, input.size);
+
+  sleep_ms(100);
+
+  // NOTE(Ryan): Remove any unread 'logging' data
+  tcflush(global_serial_fd, TCIFLUSH);
+}
+
 
 INTERNAL void
 initialise_serial_port(char *serial_port, u32 baud_rate, u32 read_timeout)
@@ -152,35 +204,14 @@ main(int argc, char **argv)
   // NOTE(Ryan): For non-root access, user must be part of 'dialout' group
   initialise_serial_port("/dev/ttyACM0", B57600, 1);
 
+  disable_logging();
+
   MemArena *perm_arena = mem_arena_allocate(GB(1));
 
   global_serial_output_len = KB(1); 
   global_serial_output.str = MEM_ARENA_PUSH_ARRAY(perm_arena, u8, global_serial_output_len); 
 
-  
-  // execute_cmd(str, min_wait_time, max_wait_time);
 
-  String8 s = s8_lit("test\n");
-  writex(global_serial_fd, s.str, s.size); 
-
-  // -1 to account for NULL terminator byte included
-  u32 bytes_expected = sizeof("Test\n") - 1;
-  u32 bytes_available = 0;
-  while (bytes_available != bytes_expected)
-  {
-    ioctl(global_serial_fd, FIONREAD, &bytes_available);
-  }
-  
-	size_t bytes_read = readx(global_serial_fd, 
-                            global_serial_output.str, 
-                            bytes_expected);
-  global_serial_output.size = bytes_read;
-
-  printf("Recieved: %.*s\n", s8_varg(global_serial_output));
-  // TODO(Ryan): must check amount of bytes read as say after 5 seconds want 10 bytes, 8 bytes might be available
-  // i.e. read reads UP TO count bytes
-
-#if 0
 	struct CMUnitTest tests[] = {
     cmocka_unit_test(test_console),
   };
@@ -188,29 +219,4 @@ main(int argc, char **argv)
   int cmocka_res = cmocka_run_group_tests(tests, NULL, NULL);
 
   return cmocka_res;
-#else
-  return 0;
-#endif
-
-  // TODO(Ryan): Could do pattern checking on output to account for logging etc.
-  // In this case, have to make read non-blocking or on a timeout to account for unknown buffer size?
 }
-
-  // select is fine for low-traffic?
-  /*
-  fd_set set;
-  FD_ZERO(&set);
-  FD_SET(serial_fd, &set);
-
-  struct timeval timeout = {0};
-  timeout.tv_sec = 1;
-
-  rv = select(filedesc + 1, &set, NULL, NULL, &timeout);
-  if(rv == -1)
-    perror("select"); // an error accured 
-  else if(rv == 0)
-    printf("timeout"); // a timeout occured
-  else
-    read( filedesc, buff, len ); // there was data to read
-  close(filedesc);
-  */
