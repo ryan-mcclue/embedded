@@ -69,6 +69,12 @@ stm32f429zitx_initialise(void)
     {
       // NOTE(Ryan): Additions
       __HAL_RCC_GPIOD_CLK_ENABLE();
+      __HAL_RCC_GPIOE_CLK_ENABLE();
+      __HAL_RCC_GPIOF_CLK_ENABLE();
+      __HAL_RCC_GPIOG_CLK_ENABLE();
+      __HAL_RCC_GPIOI_CLK_ENABLE();
+      __HAL_RCC_GPIOJ_CLK_ENABLE();
+      __HAL_RCC_GPIOK_CLK_ENABLE();
 
       result = STATUS_SUCCEEDED;
     }

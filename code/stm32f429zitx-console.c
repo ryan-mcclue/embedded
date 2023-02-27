@@ -393,6 +393,18 @@ console_execute_cmd(String8 raw_str)
     {
       if (s8_match(first_token->string, console_cmd_system->name, S8_MATCH_FLAG_CASE_INSENSITIVE))
       {
+        if (second_token->string.str[0] == '?')
+        {
+          for (ConsoleCmd *console_cmd = console_cmd_system->first;
+              console_cmd != NULL;
+              console_cmd = console_cmd->next)
+          {
+            console_printf("%.*s %.*s: %.*s\n", s8_varg(console_cmd_system->name), s8_varg(console_cmd->name), s8_varg(console_cmd->help));
+          }
+
+          return;
+        }
+
         for (ConsoleCmd *console_cmd = console_cmd_system->first;
              console_cmd != NULL;
              console_cmd = console_cmd->next)
