@@ -103,7 +103,7 @@ enum {
   CONSOLE_CMD_STATUS_SUCCEEDED,
 };
 
-typedef CONSOLE_CMD_STATUS (*console_cmd_func)(String8Node *node);
+typedef CONSOLE_CMD_STATUS (*console_cmd_func)(String8Node *remaining_args);
 
 typedef struct ConsoleCmd ConsoleCmd;
 struct ConsoleCmd

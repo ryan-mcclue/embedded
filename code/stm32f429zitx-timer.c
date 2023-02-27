@@ -122,32 +122,85 @@ timers_update(void)
   }
 }
 
-#if 0
-static int32_t cmd_tmr_status(int32_t argc, const char** argv)
+INTERNAL char *
+timer_state_str(TIMER_STATE state)
 {
-    uint32_t idx;
-    uint32_t now_ms = tmr_get_ms();
-
-    printf("SysTick->CTRL=0x%08lx\n", SysTick->CTRL); // TODO REMOVE
-    printf("Current millisecond tmr=%lu\n\n", now_ms);
-
-    printf("ID   Period   Start time Time left  CB User data  State\n");
-    printf("-- ---------- ---------- ---------- -- ---------- ------\n");
-    for (idx = 0; idx < TMR_NUM_INST; idx++) {
-        struct tmr_inst_info* ti = &tmrs[idx];
-        if (ti->state == TMR_UNUSED)
-            continue;
-        printf("%2lu %10lu %10lu %10lu %2s %10lu %s\n", idx, ti->period_ms,
-               ti->start_time,
-               ti->state == TMR_RUNNING ? 
-               ti->period_ms - (now_ms - ti->start_time) : 0,
-               ti->cb_func == NULL ? "N" : "Y",
-               ti->cb_user_data,
-               tmr_state_str(ti->state));
-    }
-    return 0;
+  char *result = "UNKNOWN";
+  
+  switch (state)
+  {
+    default: break;
+    case TIMER_STATE_UNUSED:
+    {
+      result = "UNUSED";
+    } break;
+    case TIMER_STATE_STOPPED:
+    {
+      result = "STOPPED";
+    } break;
+    case TIMER_STATE_RUNNING:
+    {
+      result = "RUNNING";
+    } break;
+    case TIMER_STATE_EXPIRED:
+    {
+      result = "EXPIRED";
+    } break;
+  }
+  
+  return result;
 }
 
+INTERNAL CONSOLE_CMD_STATUS
+timer_status_cmd(String8Node *remaining_args)
+{
+  CONSOLE_CMD_STATUS result = CONSOLE_CMD_STATUS_FAILED;
+
+  u32 now_ms = HAL_GetTick();
+
+  console_printf("Current millisecond timer=%lu\n", now_ms);
+
+  console_printf("ID   Period   Start time Time left  Want Restart  State\n");
+  console_printf("-- ---------- ---------- ---------- ------------- ------\n");
+  for (u32 timer_i = 0; timer_i < global_timers.max_num_timers; timer_i += 1) 
+  {
+    TimerInfo *timer_info = &global_timers.timer_info[timer_i];
+    if (timer_info->state == TIMER_STATE_UNUSED)
+    {
+      continue;
+    }
+
+    console_printf("%2lu %10lu %10lu %10lu %12s %s\n", 
+                   timer_i, 
+                   timer_info->period_ms,
+                   timer_info->start_time,
+                   (timer_info->state == TIMER_STATE_RUNNING) ?  (timer_info->period_ms - (now_ms - timer_info->start_time)) : 0,
+                   timer_info->want_restart ? "Y" : "N",
+                   timer_state_str(timer_info->state));
+  }
+
+  result = CONSOLE_CMD_STATUS_SUCCEEDED;
+
+  return result;
+}
+
+INTERNAL void
+timer_add_console_cmds(void)
+{
+  ConsoleCmdSystem *timer_system = MEM_ARENA_PUSH_STRUCT_ZERO(global_console.perm_arena, ConsoleCmdSystem);
+  timer_system->name = s8_lit("timer");
+
+  ConsoleCmd *status_cmd = MEM_ARENA_PUSH_STRUCT_ZERO(global_console.perm_arena, ConsoleCmd);
+  status_cmd->name = s8_lit("status");
+  status_cmd->help = s8_lit("Prints status");
+  status_cmd->func = timer_status_cmd;
+
+  SLL_QUEUE_PUSH(timer_system->first, timer_system->last, status_cmd);
+  SLL_QUEUE_PUSH(global_console.first, global_console.last, timer_system);
+}
+
+
+#if 0
 static int32_t cmd_tmr_test(int32_t argc, const char** argv)
 {
     struct cmd_arg_val arg_vals[2];

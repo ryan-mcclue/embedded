@@ -89,8 +89,6 @@ int main(void)
   }
   LOG_DEBUG("Console created\n");
 
-
-
   // add commands now
   ConsoleCmdSystem *uart_cmd_system = MEM_ARENA_PUSH_STRUCT_ZERO(perm_arena, ConsoleCmdSystem);
   uart_cmd_system->name = s8_lit("uart");
@@ -105,7 +103,7 @@ int main(void)
 
 
   stm32f429zitx_create_timers(perm_arena, 5); 
-  u32 printing_timer_id = timer_create(1000, true, printing_timer_cb, NULL);
+  timer_add_console_cmds();
  
 
   // GPIO_MODE_EVT_FALLING
@@ -203,7 +201,7 @@ int main(void)
       }
     }
 
-    //timers_update();
+    timers_update();
 
       // IMPORTANT(Ryan): Ozone won't load symbol if not called directly.
       // So, unfortunately cannot call from a macro to have it easily compiled out

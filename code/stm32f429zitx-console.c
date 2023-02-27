@@ -301,13 +301,31 @@ console_execute_cmd(String8 raw_str)
   {
     if (first_token->string.str[0] == '?')
     {
+      console_printf("CONSOLE:\n");
       console_printf("? (Display this information)\n");
       console_printf("+ (Enable logging)\n");
       console_printf("- (Disable logging)\n");
       console_printf("Change log level by entering: %s\n", LOG_LEVEL_NAMES_STR);
       console_printf("* (Display console info)\n");
       console_printf("test (Display test message)\n");
-      // --> uart (status, test, etc.)
+
+      console_printf("\nSUBSYSTEMS:\n");
+      for (ConsoleCmdSystem *console_cmd_system = global_console.first;
+          console_cmd_system != NULL;
+          console_cmd_system = console_cmd_system->next)
+      {
+        console_printf("%.*s (", s8_varg(console_cmd_system->name));
+
+        for (ConsoleCmd *console_cmd = console_cmd_system->first;
+            console_cmd != NULL;
+            console_cmd = console_cmd->next)
+        {
+          console_printf("%.*s%s", s8_varg(console_cmd->name), (console_cmd == console_cmd_system->last) ? "" : ",");
+        }
+
+        console_printf(")\n");
+      }
+
     }
     else if (first_token->string.str[0] == '+')
     {
