@@ -34,13 +34,6 @@ struct DIOs
 
 GLOBAL DIOs global_dios;
 
-INTERNAL void
-dio_init(MemArena *perm_arena, u32 max_num)
-{
-  global_dios.inputs = MEM_ARENA_PUSH_ARRAY_ZERO(perm_arena, DIOInput, max_num);
-  global_dios.outputs = MEM_ARENA_PUSH_ARRAY_ZERO(perm_arena, DIOOutput, max_num);
-  global_dios.max_num = max_num;
-}
 
 INTERNAL u32
 dio_add_input(String8 name, GPIO_InitTypeDef *gpio_init, GPIO_TypeDef *gpio_port, u32 invert)
@@ -133,104 +126,157 @@ dio_output_set(u32 index, u32 value)
   }
 }
 
-#if 0
 INTERNAL CONSOLE_CMD_STATUS
 dio_status_cmd(String8Node *remaining_args)
 {
   CONSOLE_CMD_STATUS result = CONSOLE_CMD_STATUS_FAILED;
 
-    uint32_t idx;
-    
-    printf("Inputs:\n");
-    for (idx = 0; idx < cfg->num_inputs; idx++)
-        printf("  %2lu: %s = %ld\n", idx, cfg->inputs[idx].name, dio_get(idx));
-    
+  console_printf("Inputs:\n");
+  for (u32 input_i = 0; input_i < global_dios.count_inputs; input_i += 1)
+  {
+    console_printf("  %2lu: %.*s = %ld\n", input_i, s8_varg(global_dios.inputs[input_i].name), dio_input_get(input_i));
+  }
 
-    printf("Outputs:\n");
-    for (idx = 0; idx < cfg->num_outputs; idx++)
-        printf("  %2lu: %s = %ld\n", idx, cfg->outputs[idx].name,
-               dio_get_out(idx));
+  console_printf("Outputs:\n");
+  for (u32 output_i = 0; output_i < global_dios.count_outputs; output_i += 1)
+  {
+    console_printf("  %2lu: %.*s = %ld\n", output_i, s8_varg(global_dios.outputs[output_i].name), dio_output_get(output_i));
+  }
 
-    return 0;
+  result = CONSOLE_CMD_STATUS_SUCCEEDED;
 
   return result;
 }
 
-static int32_t cmd_dio_get(int32_t argc, const char** argv)
+INTERNAL CONSOLE_CMD_STATUS 
+dio_get_cmd(String8Node *remaining_args)
 {
-    uint32_t idx;
-    struct cmd_arg_val arg_vals[1];
+  CONSOLE_CMD_STATUS result = CONSOLE_CMD_STATUS_FAILED;
 
-    if (cmd_parse_args(argc-2, argv+2, "s", arg_vals) != 1)
-        return MOD_ERR_BAD_CMD;
+  if (remaining_args != NULL)
+  {
+    String8 dio_name = remaining_args->string; 
 
-    for (idx = 0; idx < cfg->num_inputs; idx++)
-        if (strcasecmp(arg_vals[0].val.s, cfg->inputs[idx].name) == 0)
-            break;
-    if (idx < cfg->num_inputs) {
-        printf("%s = %ld\n", cfg->inputs[idx].name, dio_get(idx));
-        return 0;
+    for (u32 input_i = 0; input_i < global_dios.count_inputs; input_i += 1)
+    {
+      DIOInput input = global_dios.inputs[input_i];
+      
+      if (s8_match(input.name, dio_name, S8_MATCH_FLAG_CASE_INSENSITIVE))
+      {
+        console_printf("%.*s = %ld\n", s8_varg(input.name), dio_input_get(input_i));
+        return CONSOLE_CMD_STATUS_SUCCEEDED;
+      }
     }
 
-    for (idx = 0; idx < cfg->num_outputs; idx++)
-        if (strcasecmp(arg_vals[0].val.s, cfg->outputs[idx].name) == 0)
-            break;
-    if (idx < cfg->num_outputs) {
-        printf("%s %ld\n", cfg->outputs[idx].name, dio_get_out(idx));
-        return 0;
+    for (u32 output_i = 0; output_i < global_dios.count_outputs; output_i += 1)
+    {
+      DIOOutput output = global_dios.outputs[output_i];
+      
+      if (s8_match(output.name, dio_name, S8_MATCH_FLAG_CASE_INSENSITIVE))
+      {
+        console_printf("%.*s = %ld\n", s8_varg(output.name), dio_output_get(output_i));
+        return CONSOLE_CMD_STATUS_SUCCEEDED;
+      }
     }
-    printf("Invalid dio input/output name '%s'\n", arg_vals[0].val.s);
-    return MOD_ERR_ARG;
+
+    console_printf("Unknown dio name %.*s\n", s8_varg(dio_name));
+  }
+  else
+  {
+    console_printf("No dio name passed\n");
+  }
+
+  return result;
 }
 
-/*
- * @brief Console command function for "dio set".
- *
- * @param[in] argc Number of arguments, including "dio".
- * @param[in] argv Argument values, including "dio".
- *
- * @return 0 for success, else a "MOD_ERR" value. See code for details.
- *
- * Command usage: dio set <output-name> {0|1}
- */
-static int32_t cmd_dio_set(int32_t argc, const char** argv)
+INTERNAL CONSOLE_CMD_STATUS 
+dio_set_cmd(String8Node *remaining_args)
 {
-    uint32_t idx;
-    struct cmd_arg_val arg_vals[2];
-    uint32_t value;
+  CONSOLE_CMD_STATUS result = CONSOLE_CMD_STATUS_FAILED;
 
-    if (cmd_parse_args(argc-2, argv+2, "su", arg_vals) != 2)
-        return MOD_ERR_BAD_CMD;
+  if (remaining_args != NULL)
+  {
+    String8 name = remaining_args->string; 
+    u32 index = MAX_U32;
 
-    for (idx = 0; idx < cfg->num_outputs; idx++)
-        if (strcasecmp(arg_vals[0].val.s, cfg->outputs[idx].name) == 0)
-            break;
-    if (idx >= cfg->num_outputs) {
-        printf("Invalid dio name '%s'\n", arg_vals[0].val.s);
-        return MOD_ERR_ARG;
+    for (u32 output_i = 0; output_i < global_dios.count_outputs; output_i += 1)
+    {
+      DIOOutput output = global_dios.outputs[output_i];
+      
+      if (s8_match(output.name, name, S8_MATCH_FLAG_CASE_INSENSITIVE))
+      {
+        index = output_i;
+        break;
+      }
     }
 
-    value = arg_vals[1].val.u;
-    if (value != 0 && value != 1) {
-        printf("Invalid value '%s'\n", argv[3]);
-        return MOD_ERR_ARG;
+    if (index != MAX_U32)
+    {
+      String8Node *output_val = remaining_args->next; 
+      if (output_val != NULL)
+      {
+        u32 output_u32 = (u32)(output_val->string.str[0] - '0');
+        if (output_u32 == 0 || output_u32 == 1)
+        {
+          dio_output_set(index, output_u32);
+          result = CONSOLE_CMD_STATUS_SUCCEEDED;
+        }
+        else
+        {
+          console_printf("Invalid output value passed '%.*s'\n", s8_varg(output_val->string));
+        }
+      }
+      else
+      {
+        console_printf("No output value passed\n");
+      }
     }
-    return dio_set(idx, value);
+    else
+    {
+      console_printf("Unknown dio name %.*s\n", s8_varg(name));
+    }
+  }
+  else
+  {
+    console_printf("No dio output name passed\n");
+  }
+
+  return result;
 }
-
 
 INTERNAL void
-timer_add_console_cmds(void)
+dio_add_console_cmds(void)
 {
-  ConsoleCmdSystem *timer_system = MEM_ARENA_PUSH_STRUCT_ZERO(global_console.perm_arena, ConsoleCmdSystem);
-  timer_system->name = s8_lit("timer");
+  ConsoleCmdSystem *dio_system = MEM_ARENA_PUSH_STRUCT_ZERO(global_console.perm_arena, ConsoleCmdSystem);
+  dio_system->name = s8_lit("dio");
 
   ConsoleCmd *status_cmd = MEM_ARENA_PUSH_STRUCT_ZERO(global_console.perm_arena, ConsoleCmd);
   status_cmd->name = s8_lit("status");
   status_cmd->help = s8_lit("Prints status");
-  status_cmd->func = timer_status_cmd;
+  status_cmd->func = dio_status_cmd;
+  SLL_QUEUE_PUSH(dio_system->first, dio_system->last, status_cmd);
 
-  SLL_QUEUE_PUSH(timer_system->first, timer_system->last, status_cmd);
-  SLL_QUEUE_PUSH(global_console.first, global_console.last, timer_system);
+  ConsoleCmd *get_cmd = MEM_ARENA_PUSH_STRUCT_ZERO(global_console.perm_arena, ConsoleCmd);
+  get_cmd->name = s8_lit("get");
+  get_cmd->help = s8_lit("Return dio information");
+  get_cmd->func = dio_get_cmd;
+  SLL_QUEUE_PUSH(dio_system->first, dio_system->last, get_cmd);
+
+  ConsoleCmd *set_cmd = MEM_ARENA_PUSH_STRUCT_ZERO(global_console.perm_arena, ConsoleCmd);
+  set_cmd->name = s8_lit("set");
+  set_cmd->help = s8_lit("Set dio information");
+  set_cmd->func = dio_set_cmd;
+  SLL_QUEUE_PUSH(dio_system->first, dio_system->last, set_cmd);
+
+  SLL_QUEUE_PUSH(global_console.first, global_console.last, dio_system);
 }
-#endif
+
+INTERNAL void
+dio_init(MemArena *perm_arena, u32 max_num)
+{
+  global_dios.inputs = MEM_ARENA_PUSH_ARRAY_ZERO(perm_arena, DIOInput, max_num);
+  global_dios.outputs = MEM_ARENA_PUSH_ARRAY_ZERO(perm_arena, DIOOutput, max_num);
+  global_dios.max_num = max_num;
+
+  dio_add_console_cmds();
+}

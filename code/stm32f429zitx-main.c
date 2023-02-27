@@ -103,16 +103,24 @@ int main(void)
   SLL_QUEUE_PUSH(global_console.first, global_console.last, uart_cmd_system);
 
   stm32f429zitx_create_timers(perm_arena, 5); 
-  timer_add_console_cmds();
  
+
   dio_init(perm_arena, 10);
+
   GPIO_InitTypeDef init = ZERO_STRUCT;
   init.Pin = GPIO_PIN_2;
   init.Mode = GPIO_MODE_OUTPUT_PP;
   init.Pull = GPIO_NOPULL;
   init.Speed = GPIO_SPEED_FREQ_HIGH;
-  u32 index = dio_add_output(s8_lit("green led"), &init, GPIOG, 0);
-  dio_output_set(index, 1);
+  u32 green_led_dio_index = dio_add_output(s8_lit("green_led"), &init, GPIOG, 0);
+  dio_output_set(green_led_dio_index, 1);
+
+  init.Pin = GPIO_PIN_3;
+  init.Mode = GPIO_MODE_OUTPUT_PP;
+  init.Pull = GPIO_NOPULL;
+  init.Speed = GPIO_SPEED_FREQ_HIGH;
+  u32 red_led_dio_index = dio_add_output(s8_lit("red_led"), &init, GPIOG, 0);
+  dio_output_set(red_led_dio_index, 1);
   
   // digital IO
   // for electronics, anode is where current flows in, so positive.

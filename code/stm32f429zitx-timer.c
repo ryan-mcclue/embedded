@@ -4,13 +4,6 @@
 
 GLOBAL Timers global_timers;
 
-INTERNAL void
-stm32f429zitx_create_timers(MemArena *perm_arena, u32 max_num_timers)
-{
-  global_timers.timer_info = MEM_ARENA_PUSH_ARRAY_ZERO(perm_arena, TimerInfo, max_num_timers);
-  global_timers.max_num_timers = max_num_timers;
-  LOG_DEBUG("Timers created\n");
-}
 
 INTERNAL u32
 timer_create(u32 period_ms, b32 want_restart, timer_cb cb, void  *cb_user_data)
@@ -199,6 +192,15 @@ timer_add_console_cmds(void)
   SLL_QUEUE_PUSH(global_console.first, global_console.last, timer_system);
 }
 
+INTERNAL void
+stm32f429zitx_create_timers(MemArena *perm_arena, u32 max_num_timers)
+{
+  global_timers.timer_info = MEM_ARENA_PUSH_ARRAY_ZERO(perm_arena, TimerInfo, max_num_timers);
+  global_timers.max_num_timers = max_num_timers;
+  LOG_DEBUG("Timers created\n");
+  
+  timer_add_console_cmds();
+}
 
 #if 0
 static int32_t cmd_tmr_test(int32_t argc, const char** argv)
