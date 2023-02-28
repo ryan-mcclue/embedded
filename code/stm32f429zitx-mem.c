@@ -49,8 +49,6 @@ mem_read_cmd(String8Node *remaining_args)
   return result;
 }
 
-// mem write 0x1234 1 0x22
-
 INTERNAL CONSOLE_CMD_STATUS 
 mem_write_cmd(String8Node *remaining_args)
 {
@@ -73,6 +71,25 @@ mem_write_cmd(String8Node *remaining_args)
         {
           u32 data_u32 = s8_u32(data->string, &parse_err);
 
+          switch (data_size_u32)
+          {
+            default:
+            case 1:
+            {
+              *((u8 *)address_u32) = (u8)data_u32;
+              console_printf("Wrote %02x to %08x\n", (u8)data_u32, INT_FROM_PTR(address_u32));
+            } break;
+            case 2:
+            {
+              *((u16 *)address_u32) = (u16)data_u32;
+              console_printf("Wrote %04x to %08x\n", (u16)data_u32, INT_FROM_PTR(address_u32));
+            } break;
+            case 4:
+            {
+              *address_u32 = data_u32;
+              console_printf("Wrote %08x to %08x\n", data_u32, INT_FROM_PTR(address_u32));
+            } break;
+          }
 
           result = CONSOLE_CMD_STATUS_SUCCEEDED;
         }
@@ -100,7 +117,6 @@ mem_write_cmd(String8Node *remaining_args)
 }
 
 
-
 // there is a lot of 'roll-it-yourself' in embedded as every hardware is different
 // if wanting to save serial monitor output, best to use Putty on Ubuntu (all could pipe with stty?)
 
@@ -112,9 +128,15 @@ mem_add_console_cmds(void)
 
   ConsoleCmd *read_cmd = MEM_ARENA_PUSH_STRUCT_ZERO(global_console.perm_arena, ConsoleCmd);
   read_cmd->name = s8_lit("read");
-  read_cmd->help = s8_lit("Prints read");
+  read_cmd->help = s8_lit("Read memory, usage: mem read <addr> <num-lines>");
   read_cmd->func = mem_read_cmd;
   SLL_QUEUE_PUSH(mem_system->first, mem_system->last, read_cmd);
+
+  ConsoleCmd *write_cmd = MEM_ARENA_PUSH_STRUCT_ZERO(global_console.perm_arena, ConsoleCmd);
+  write_cmd->name = s8_lit("write");
+  write_cmd->help = s8_lit("Write memory, usage: mem write <addr> <bytes> <value>");
+  write_cmd->func = mem_write_cmd;
+  SLL_QUEUE_PUSH(mem_system->first, mem_system->last, write_cmd);
 
   SLL_QUEUE_PUSH(global_console.first, global_console.last, mem_system);
 }

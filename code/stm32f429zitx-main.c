@@ -84,6 +84,7 @@ int main(void)
   uart_params.rx_buf_len = 256;
   uart_params.tx_buf_len = 256;
 
+  // TODO(Ryan): Seem to get framing errors on startup?
   u32 console_cmd_str_buf_len = 64;
   if (stm32f429zitx_create_console(perm_arena, console_cmd_str_buf_len, &uart_params) == STATUS_FAILED)
   {
