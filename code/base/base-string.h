@@ -363,4 +363,138 @@ s8_list_join(MemArena *arena, String8List list, String8Join *join_ptr)
   return(result);
 }
 
+INTERNAL u32
+char_to_u32(char ch)
+{
+  u32 result = 0;
+
+  switch (ch)
+  {
+    default: break;
+    case '0': 
+    {
+      result = 0; break;
+    }
+    case '1': 
+    {
+      result = 1; break;
+    }
+    case '2': 
+    {
+      result = 2; break;
+    }
+    case '3': 
+    {
+      result = 3; break;
+    }
+    case '4': 
+    {
+      result = 4; break;
+    }
+    case '5': 
+    {
+      result = 5; break;
+    }
+    case '6': 
+    {
+      result = 6; break;
+    }
+    case '7': 
+    {
+      result = 7; break;
+    }
+    case '8': 
+    {
+      result = 8; break;
+    }
+    case '9': 
+    {
+      result = 9; break;
+    }
+    case 'a':
+    case 'A': 
+    {
+      result = 10; break;
+    }
+    case 'b':
+    case 'B': 
+    {
+      result = 11; break;
+    }
+    case 'c':
+    case 'C': 
+    {
+      result = 12; break;
+    }
+    case 'd':
+    case 'D': 
+    {
+      result = 13; break;
+    }
+    case 'e':
+    case 'E': 
+    {
+      result = 14; break;
+    }
+    case 'f':
+    case 'F': 
+    {
+      result = 15; break;
+    }
+  }
+
+  return result;
+}
+
+INTERNAL u32
+s8_u32(String8 str, b32 *error)
+{
+  u32 result = 0;
+  u32 base = 10;
+
+  u32 str_i = 0;
+
+  if (str.size > 2)
+  {
+    if (str.str[str_i] == '0')
+    {
+      str_i += 1;
+      if (str.str[str_i] == 'x')
+      {
+        base = 16;
+        str_i += 1;
+      }
+    }
+  }
+
+  while (str_i < str.size)
+  {
+    u32 digit = char_to_u32(str.str[str_i]);
+
+    if (digit == 0)
+    {
+      break;
+    }
+
+    if (digit >= base)
+    {
+      *error = 1;
+      break;
+    }
+
+    if (result > ((MAX_U32 - digit) / base))
+    {
+      *error = 1; 
+      break;
+    }
+
+    result = (result * base) + digit;
+
+    str_i += 1;
+  }
+
+  return result;
+}
+
+
 #endif

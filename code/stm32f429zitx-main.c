@@ -96,7 +96,7 @@ int main(void)
 
   ConsoleCmd *uart_cmd_system_status_cmd = MEM_ARENA_PUSH_STRUCT_ZERO(perm_arena, ConsoleCmd);
   uart_cmd_system_status_cmd->name = s8_lit("status");
-  uart_cmd_system_status_cmd->help = s8_lit("Prints status");
+  uart_cmd_system_status_cmd->help = s8_lit("Prints status, usage: ");
   uart_cmd_system_status_cmd->func = console_uart_cmd_system_status_cmd;
 
   SLL_QUEUE_PUSH(uart_cmd_system->first, uart_cmd_system->last, uart_cmd_system_status_cmd);
@@ -127,7 +127,15 @@ int main(void)
   // longer lead for LED
 
 
+  // no protection against hard faults
+  // a lot easier to get a serial connection in the field than to attach a debugger
+  // with memory module, can inspect/alter memory-mapped registers
+  // look in linker map file to get addresses of globals and statics
+  // could look at what is at start of ram or flash (comparing u8 and u32 tells endianness)
+  // a watchdog timer could reset and get ourselves out of fault handlers 
 
+
+  // interesting US GPS is free GNSS
 
   // GPIO_MODE_EVT_FALLING
   // an event is a software controlled flow control mechanism

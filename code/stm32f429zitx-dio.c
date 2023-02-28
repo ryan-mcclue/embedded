@@ -279,4 +279,6 @@ dio_init(MemArena *perm_arena, u32 max_num)
   global_dios.max_num = max_num;
 
   dio_add_console_cmds();
+
+  LOG_DEBUG("Dio init\n");
 }
