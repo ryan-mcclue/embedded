@@ -469,12 +469,7 @@ s8_u32(String8 str, b32 *error)
 
   while (str_i < str.size)
   {
-    u32 digit = char_to_u32(str.str[str_i]);
-
-    if (digit == 0)
-    {
-      break;
-    }
+    u32 digit = char_to_u32((char)str.str[str_i]);
 
     if (digit >= base)
     {

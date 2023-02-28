@@ -37,6 +37,7 @@
 #include "stm32f429zitx-console.c"
 #include "stm32f429zitx-timer.c"
 #include "stm32f429zitx-dio.c"
+#include "stm32f429zitx-mem.c"
 
 // TODO(Ryan): Support 'uart ?'
 INTERNAL CONSOLE_CMD_STATUS
@@ -102,9 +103,13 @@ int main(void)
   SLL_QUEUE_PUSH(uart_cmd_system->first, uart_cmd_system->last, uart_cmd_system_status_cmd);
   SLL_QUEUE_PUSH(global_console.first, global_console.last, uart_cmd_system);
 
+
   stm32f429zitx_create_timers(perm_arena, 5); 
  
 
+  // digital IO
+  // for electronics, anode is where current flows in, so positive.
+  // longer lead for LED
   dio_init(perm_arena, 10);
 
   GPIO_InitTypeDef init = ZERO_STRUCT;
@@ -121,11 +126,6 @@ int main(void)
   init.Speed = GPIO_SPEED_FREQ_HIGH;
   u32 red_led_dio_index = dio_add_output(s8_lit("red_led"), &init, GPIOG, 0);
   dio_output_set(red_led_dio_index, 1);
-  
-  // digital IO
-  // for electronics, anode is where current flows in, so positive.
-  // longer lead for LED
-
 
   // no protection against hard faults
   // a lot easier to get a serial connection in the field than to attach a debugger
@@ -133,6 +133,8 @@ int main(void)
   // look in linker map file to get addresses of globals and statics
   // could look at what is at start of ram or flash (comparing u8 and u32 tells endianness)
   // a watchdog timer could reset and get ourselves out of fault handlers 
+  mem_add_console_cmds();
+   
 
 
   // interesting US GPS is free GNSS
@@ -228,7 +230,7 @@ int main(void)
       }
       else
       {
-        global_console.cmd_str.str[global_console.cmd_str_buf_cursor++] = console_ch;
+        global_console.cmd_str.str[global_console.cmd_str_buf_cursor++] = (u8)console_ch;
         global_console.cmd_str.size += 1;
         console_ch = console_read_ch();
       }

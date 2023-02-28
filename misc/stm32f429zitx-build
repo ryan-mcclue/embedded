@@ -174,9 +174,9 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
     # TODO(Ryan): Incorporate application code into compile
     # NOTE(Ryan): This generates .gcno files
 
-    : '
-    
-    test_linker_flags+=( "-Wl,--wrap=HAL_Init" "-Wl,--wrap=SystemClock_Config" )
+    test_linker_flags+=( "-Wl,--wrap=stm32f429zitx_initialise" "-Wl,--wrap=HAL_GPIO_Init" )
+    test_linker_flags+=( "-Wl,--wrap=HAL_UART_Init" "-Wl,--wrap=HAL_GetTick" )
+    test_linker_flags+=( "-Wl,--wrap=HAL_GPIO_ReadPin" "-Wl,--wrap=HAL_GPIO_WritePin" )
 
     gcc ${test_compiler_flags[*]} \
       tests/${param_mcu}-tests.c -o build/${param_mcu}-tests-${param_mode} \
@@ -209,7 +209,6 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
     else
       echo "$test_output"
     fi
-    '
 
   else
     # TODO(Ryan): Investigate fuzz testing also
@@ -223,6 +222,9 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
 
     arm-none-eabi-objcopy -O binary build/${param_mcu}-target-${param_mode}.elf build/${param_mcu}-target-${param_mode}.bin
     arm-none-eabi-objcopy -O ihex build/${param_mcu}-target-${param_mode}.elf build/${param_mcu}-target-${param_mode}.hex
+
+    # NOTE(Ryan): For arduino IDE
+    cp build/${param_mcu}-target-${param_mode}.map misc/console/${param_mcu}-target-${param_mode}.ino
 
   fi
 

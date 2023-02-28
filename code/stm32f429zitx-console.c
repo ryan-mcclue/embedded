@@ -195,7 +195,7 @@ console_write_ch(char ch)
     return;
   }
 
-  global_console.uart_info.tx_buf[global_console.uart_info.tx_buf_write_index] = ch;
+  global_console.uart_info.tx_buf[global_console.uart_info.tx_buf_write_index] = (u8)ch;
   global_console.uart_info.tx_buf_write_index = next_write_index;
 
   // Ensure the TXE interrupt is enabled.
@@ -223,7 +223,7 @@ console_read_ch(void)
     next_read_index = 0;
   }
 
-  result = global_console.uart_info.rx_buf[global_console.uart_info.rx_buf_read_index];
+  result = (char)global_console.uart_info.rx_buf[global_console.uart_info.rx_buf_read_index];
   global_console.uart_info.rx_buf_read_index = next_read_index;
 
   CRITICAL_END();
@@ -244,7 +244,7 @@ console_printf(char *fmt, ...)
   // TODO(Ryan): Add max print limit and indicate if reached by appending [!]
   for (u32 i = 0; i < message.size; i += 1)
   {
-    console_write_ch(message.str[i]); 
+    console_write_ch((char)message.str[i]); 
   }
 
   temp_mem_arena_release(arena);
@@ -262,7 +262,7 @@ console_printf_nested(char *fmt, va_list args)
   // TODO(Ryan): Add max print limit and indicate if reached by appending [!]
   for (u32 i = 0; i < message.size; i += 1)
   {
-    console_write_ch(message.str[i]); 
+    console_write_ch((char)message.str[i]); 
   }
 
 }
