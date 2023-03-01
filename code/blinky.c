@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: zlib-acknowledgement
 
+// gtu-u7 (gtu developed by u-blox)
+
 // slow blink is intended to count to indicate a condition
 
 typedef struct Blinky Blinky;

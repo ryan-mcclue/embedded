@@ -143,7 +143,13 @@ int main(void)
   // a watchdog timer could reset and get ourselves out of fault handlers 
   mem_add_console_cmds();
    
-
+  // TODO(Ryan): Count and store any runtime update errors under 'main'
+  // typical to log error and then update counter
+  // TODO(Ryan): Count super loop min, max, avg time (microsecond average loop time is more likely, which SysTick won't see)
+  // IMPORTANT(Ryan): Super loop has weaknesses. Implication of say, a GPS module performing trigonometry in 10ms, means
+  // other modules have to wait 10ms before they can run.
+  // In an RTOS, we could have the GPS prempted.
+  // However, an RTOS brings in design issues that must be solved, i.e. accessing data from multiple threads
 
   // interesting US GPS is free GNSS
 
@@ -216,6 +222,7 @@ int main(void)
   // RTC can be used to timestamp data
 
 
+
   // IMPORTANT(Ryan): Expect serial terminal to append newline
   while (FOREVER)
   {
@@ -244,6 +251,7 @@ int main(void)
       }
     }
 
+    // this should remain last?
     timers_update();
 
       // IMPORTANT(Ryan): Ozone won't load symbol if not called directly.

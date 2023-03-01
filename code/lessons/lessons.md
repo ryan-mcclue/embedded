@@ -331,6 +331,7 @@ SPI flash erase byte is 0xff? Can only set by sectors?
   If see like I2C on schematic, then probably connection to peripheral on board like MEMS sensor
   Also, this might be a separate block on page, indicating connecting to another component, e.g. pull-up resistor for I2C audio
   Schematic specific letters, e.g. SB solder bridge, U unit etc.
+  (schematic often found under 'CAD resources' along with gerber files, BOM etc.)
 
   Common in embedded to overload terms, e.g. STM32 board
 
@@ -389,5 +390,7 @@ SPI flash erase byte is 0xff? Can only set by sectors?
   hardware and software people need to be in it together
   shipping products is a team sport
 
-
+  Flash erase is 0xFF?
+  Pages vs sectors vs buffers (would be slower, i.e. must take into account sector boundaries)?
+  EM100Pro-G2 SPI NOR Flash Emulator
 
