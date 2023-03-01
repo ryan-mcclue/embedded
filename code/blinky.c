@@ -44,6 +44,10 @@ blinky_callback(void)
   timer_start();
 }
 
+// various ways to implement state machine
+// some use tables for many states
+// for simple ones, use this timer
+
 // state machine: (typically deterministic?)
 //   * states (Moore produces output when remaining?). Always have fail state (even if implicit)
 //   * transitions (Meley produces output)

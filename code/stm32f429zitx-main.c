@@ -39,6 +39,11 @@
 #include "stm32f429zitx-dio.c"
 #include "stm32f429zitx-mem.c"
 
+// TODO(Ryan): If code size a problem perhaps:
+#if 0
+#define LIT(x) (sizeof(x) < MAX_LIT_LEN ? (x) : 0)
+#endif
+
 // TODO(Ryan): Support 'uart ?'
 INTERNAL CONSOLE_CMD_STATUS
 console_uart_cmd_system_status_cmd(String8Node *args)
@@ -91,6 +96,8 @@ int main(void)
     while (1) {}
   }
   LOG_DEBUG("Console created\n");
+
+  // TODO(Ryan): Include POST console commands 
 
   // add commands now
   ConsoleCmdSystem *uart_cmd_system = MEM_ARENA_PUSH_STRUCT_ZERO(perm_arena, ConsoleCmdSystem);

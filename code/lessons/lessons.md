@@ -248,7 +248,7 @@ ground loop is essentially multiple grounds instead of one, leading to extraneou
 
 
  Arduino not suitable for industry (overpriced, library licensing issues, only printf debugging)  
- PCB then PCBA (components attached)
+ gerber -> PCB -> PCBA (components attached)
  On unknown schematic, internet search for chips with most connections
  Take note of title block (typically on bottom right) on schematic. 
  First page will typically be a blow-out/legend for subsequent pages. 
@@ -323,3 +323,71 @@ SPI flash erase byte is 0xff? Can only set by sectors?
   // Say we want an output frequency of 1Hz, we play with prescaler and counter values that fit within the 16 bits provided in relation to the input clock
   // E.g. 42MHz in, divide by 42000 (in range of 16bit) gives 1000Hz. Then count to 1000
   // A formula for calculating this will often be given (update event period)
+
+  ## Week 3
+  Documentation:
+  TODO: be able to read timing diagrams better (e.g. peripheral driver)
+
+  If see like I2C on schematic, then probably connection to peripheral on board like MEMS sensor
+  Also, this might be a separate block on page, indicating connecting to another component, e.g. pull-up resistor for I2C audio
+  Schematic specific letters, e.g. SB solder bridge, U unit etc.
+
+  Common in embedded to overload terms, e.g. STM32 board
+
+  AVR 'fuse' bits, e.g. configuration bits (imagine each bit is a jumper wire)
+  Could be considered security or lock bits?
+  bootloader lock bits? used to control access of flash from code, i.e. application code from bootloader
+  or flash/eeprom from being accessed by external tool, i.e. not from MCU (in this case, only way to clear is to do a chip erase)
+  (so can't flash again?)
+  Boot pins determine where in flash start?
+    
+  Program board over SWD (with JTAG) or ISP (in-system programmer, a.k.a in-circuit serial programming)
+
+  IC packaging:
+  DIP (double inline package; logic gates), SOP (small outline package; voltage regulator), 
+  QFN (quad flat package; mcu) and BGA (ball grid array; cpu)
+
+  L3Harris job in queensland (elizabeth roy linkedin)
+
+  Various 'application note' documents and errata (for mcu and peripheral) (e.g. I2C port might not work under certain conditions)
+  (application note for 'efficient coding' when looking at low power)
+
+  Cannot debug without understanding of say I2C
+
+  Under no aspersions that working of dev board reflects entire product design
+  TODO: how would program go about for PCBA?
+  How do dependency between hardware and software development work for project?
+  Understanding how interdisciplinary scheduling works?
+  So, software can start before hardware ready as work on dev board?
+  Software should be flexible to hardware changes
+
+  As problems not always software:
+  Need to be able give hardware/electrical engineer as much information as you can to reproduce bug
+  (problem not always ground loop or cosmic ray radiation)  
+
+  oscilloscope:
+  see if signal matches datasheet?
+  current-draw or battery level are truly analog and don't have digital equivalent
+  (look at this if logic analyser signals don't make sense)
+
+  further debug:
+  rf interference
+  low power modes
+  JTAG/SWD
+  serial console (performs HIL testing to MCU works with each peripheral successfully before putting in enclosure) 
+  (can be used to create a reproducible problem on multiple boards; or on cue for an oscilloscope capture/EE to see)
+
+  map files: https://www.youtube.com/watch?v=XRXLUcbJIxY
+
+  So, when reporting issue:
+    * verify signal
+    * supply console command
+    * mention datasheet info, e.g timing diagram
+    * (look for open-source drivers that perform similarly)
+
+  Essentially with embedded, have lots of testing to mitigate issues so TEAM can solve problems
+  hardware and software people need to be in it together
+  shipping products is a team sport
+
+
+
