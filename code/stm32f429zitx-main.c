@@ -152,10 +152,16 @@ int main(void)
   // However, an RTOS brings in design issues that must be solved, i.e. accessing data from multiple threads
 
   // interesting US GPS is free GNSS
+  
+  // important to know how to write to flash, e.g. log data and when connection to wireless available, transfer
+  
+  // connected with 2 channel stepper motors, 4 channel DC motors, 8 channel servos,
+  // mean stepper motors more current?
 
   // GPIO_MODE_EVT_FALLING
   // an event is a software controlled flow control mechanism
 
+  // low power devices seem just to refresh every 30minutes?
   // 3 low power modes (usage, startup time, activity)
   // (REQUIRE KNOWLEDGE OF CLOCK SOURCES)
   // 1. sleep: CPUCLK shuts off
