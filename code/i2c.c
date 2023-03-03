@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: zlib-acknowledgement
 
-// register level driver
+// register level driver (can still use HAL register API)
 // 
 // CAN and UART bus length a lot longer
 // SPI requires one dedicated signal for each device
@@ -43,9 +43,24 @@
 // clock stretching, i.e. keep clock low gives devices more time
 // e.g. MCU can't generate data when slave wants it 
 
-// combined format is write+read in a single transaction (provides atomicity)
+// combined format is write+read in a single transaction (provides atomicity; not as important for common single master setup)
 // e.g. write register to then read from
 
 // if multiple devices can't handle sample rate, perhaps put devices on separate buses to communicate in parallel
 
 // mock i2c and timers for unit testing? 
+
+// a functional requirement would be I2C specific, while non functional would be code implementation 
+
+// the console commands (along with error counts, i.e. bus statistics) are essential for testability
+// we want iterative testing for driver development, i.e. testing as early as possible
+// so say, want to be able to trigger a start condition and inspect on logic analyser. then move on, etc.
+// interrupts early on too, as they are core to driver functioning
+
+// should include comments as to why not including DMA or doing polling etc?
+// DMA is an enhancement to interrupt or separate?
+
+// poll-model or callback?
+
+// when in a state, will have events that occur, e.g. interrupt, timer expiring
+// may need a guard timer to ensure not getting stuck in a state
