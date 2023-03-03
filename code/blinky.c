@@ -13,23 +13,6 @@ blinkies_init(MemArena *perm_arena, u32 max_num_blinkies)
   global_blinkies.max_num_blinkies = max_num_blinkies;
 }
 
-// various ways to implement state machine
-// some use tables for many states
-// for simple ones, use this timer
-
-// state machine: (typically deterministic?)
-//   * states (Moore produces output when remaining?). Always have fail state (even if implicit)
-//   * transitions (Meley produces output)
-//   * events
-
-// seems that Moore and Meley definitions are too rigid, as sometimes (produce output/perform action) on a transition and sometimes won't
-
-// FSMs are useful in times where you have to wait and don't have threads?
-// FSMS good for reactive systems (of which embedded are)
-
-// event-driven and table-driven FSMs?
-// like autosar/cubeIDE embedded has a lot of 'model-driven' software development
-
 INTERNAL void
 blinky_callback(u32 timer_id, void *data)
 {
@@ -130,3 +113,5 @@ blinky_start(u32 blinky_id)
   }
 }
 
+// TODO(Ryan): Console commands:
+// set period, set blink count, turn on, turn off, status, etc.

@@ -58,10 +58,58 @@ console_uart_cmd_system_status_cmd(String8Node *args)
   return result;
 }
 
-INTERNAL void
-printing_timer_cb(u32 timer_id, void *data)
+typedef struct Stat Stat;
+struct Stat
 {
-  LOG_INFO("Hi from timer!\n");
+  u32 accum_ms;
+  u32 start_ms;
+  u32 min;
+  u32 max;
+  u32 samples;
+  b32 started;
+};
+
+INTERNAL Stat
+get_stat(void)
+{
+  Stat result = ZERO_STRUCT;
+  result.min = MAX_U32;
+
+  return result;
+}
+
+INTERNAL void
+stat_update(Stat *stat)
+{
+  u32 now_ms = HAL_GetTick();
+
+  u32 duration = now_ms - stat->start_ms;
+  stat->accum_ms += duration;
+  INC_SATURATE_U32(stat->samples);
+
+  if (duration > stat->max)
+  {
+    stat->max = duration;
+  }
+  if (duration < stat->min)
+  {
+    stat->min = duration;
+  }
+
+  stat->start_ms = now_ms;
+}
+
+INTERNAL u32
+stat_avg_us(Stat* stat)
+{
+  if (stat->samples == 0)
+  {
+    return 0;
+  }
+  else
+  {
+    return (stat->accum_ms * 1000) / stat->samples;
+  }
 }
 
 #if defined(TEST_BUILD)
@@ -143,11 +191,31 @@ int main(void)
   // a watchdog timer could reset and get ourselves out of fault handlers 
   mem_add_console_cmds();
 
+
+  // various ways to implement state machine
+  // some use tables for many states
+  // for simple ones, use this timer
+
+  // state machine: (typically deterministic?)
+  //   * states (Moore produces output when remaining?). Always have fail state (even if implicit)
+  //   * transitions (Meley produces output)
+  //   * events
+
+  // seems that Moore and Meley definitions are too rigid, as sometimes (produce output/perform action) on a transition and sometimes won't
+
+  // FSMs are useful in times where you have to wait and don't have threads?
+  // FSMS good for reactive systems (of which embedded are)
+
+  // event-driven and table-driven FSMs?
+  // like autosar/cubeIDE embedded has a lot of 'model-driven' software development
   blinkies_init(perm_arena, 4);
   u32 green_blinky = blinky_create(green_led_dio_index, 10, 500, 1000, 1000);
   //blinky_start(green_blinky);
    
 
+  Stat loop_stat = get_stat();
+
+  // the DWT_CYCCNT register is implementation dependent
 
   // TODO(Ryan): Count and store any runtime update errors under 'main'
   // typical to log error and then update counter
@@ -156,6 +224,10 @@ int main(void)
   // other modules have to wait 10ms before they can run.
   // In an RTOS, we could have the GPS prempted.
   // However, an RTOS brings in design issues that must be solved, i.e. accessing data from multiple threads
+
+
+
+
 
   // interesting US GPS is free GNSS
   
@@ -238,8 +310,7 @@ int main(void)
   // IMPORTANT(Ryan): Expect serial terminal to append newline
   while (FOREVER)
   {
-    // TODO(Ryan): Print super loop time?
-
+    stat_update(&loop_stat);
     // IMPORTANT(Ryan): First exposure to synchronisation issues
     // UART is slow, compared to CPU frequency
     // Therefore, can't just willy nilly print over with a small ring buffer size
@@ -263,12 +334,18 @@ int main(void)
       }
     }
 
+    // can print higher resolution by computing average
+    // printf("Super loop samples=%lu min=%lu ms, max=%lu ms, avg=%lu us\n",
+    //        stat_loop_dur.samples, stat_loop_dur.min, stat_loop_dur.max,
+    //        stat_dur_avg_us(&stat_loop_dur));
+
     // this should remain last?
     timers_update();
 
       // IMPORTANT(Ryan): Ozone won't load symbol if not called directly.
       // So, unfortunately cannot call from a macro to have it easily compiled out
       // __bp();
+
   }
 
   return 0;
