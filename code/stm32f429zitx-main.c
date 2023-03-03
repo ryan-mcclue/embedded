@@ -99,6 +99,7 @@ stat_update(Stat *stat)
   stat->start_ms = now_ms;
 }
 
+// Seems that us is more likely granularity for function execution
 INTERNAL u32
 stat_avg_us(Stat* stat)
 {
