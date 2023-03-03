@@ -17,7 +17,7 @@ timer_create(u32 period_ms, b32 want_restart, timer_cb cb, void  *cb_user_data)
     {
       timer_info->period_ms = period_ms;
       timer_info->start_time = HAL_GetTick();
-      timer_info->state = TIMER_STATE_RUNNING;
+      timer_info->state = TIMER_STATE_STOPPED;
       timer_info->cb = cb;
       timer_info->cb_user_data = cb_user_data;
       timer_info->want_restart = want_restart;
@@ -44,7 +44,7 @@ timer_create(u32 period_ms, b32 want_restart, timer_cb cb, void  *cb_user_data)
 INTERNAL void
 timer_stop(u32 timer_id)
 {
-  if (timer_id > 0 && timer_id < global_timers.max_num_timers)
+  if (timer_id < global_timers.max_num_timers)
   {
     TimerInfo *timer_info = &global_timers.timer_info[timer_id];
 
@@ -57,7 +57,7 @@ timer_stop(u32 timer_id)
 INTERNAL void
 timer_start(u32 timer_id)
 {
-  if (timer_id > 0 && timer_id < global_timers.max_num_timers)
+  if (timer_id < global_timers.max_num_timers)
   {
     TimerInfo *timer_info = &global_timers.timer_info[timer_id];
 
@@ -69,9 +69,20 @@ timer_start(u32 timer_id)
 }
 
 INTERNAL void
+timer_set_period(u32 timer_id, u32 period_ms)
+{
+  if (timer_id < global_timers.max_num_timers)
+  {
+    TimerInfo *timer_info = &global_timers.timer_info[timer_id];
+
+    timer_info->period_ms = period_ms;
+  }
+}
+
+INTERNAL void
 timer_release(u32 timer_id)
 {
-  if (timer_id > 0 && timer_id < global_timers.max_num_timers)
+  if (timer_id < global_timers.max_num_timers)
   {
     TimerInfo *timer_info = &global_timers.timer_info[timer_id];
 

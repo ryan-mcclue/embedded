@@ -38,6 +38,7 @@
 #include "stm32f429zitx-timer.c"
 #include "stm32f429zitx-dio.c"
 #include "stm32f429zitx-mem.c"
+#include "blinky.c"
 
 // TODO(Ryan): If code size a problem perhaps:
 #if 0
@@ -118,7 +119,7 @@ int main(void)
   // digital IO
   // for electronics, anode is where current flows in, so positive.
   // longer lead for LED
-  dio_init(perm_arena, 10);
+  dio_init(perm_arena, 8);
 
   GPIO_InitTypeDef init = ZERO_STRUCT;
   init.Pin = GPIO_PIN_2;
@@ -126,14 +127,13 @@ int main(void)
   init.Pull = GPIO_NOPULL;
   init.Speed = GPIO_SPEED_FREQ_HIGH;
   u32 green_led_dio_index = dio_add_output(s8_lit("green_led"), &init, GPIOG, 0);
-  dio_output_set(green_led_dio_index, 1);
 
   init.Pin = GPIO_PIN_3;
   init.Mode = GPIO_MODE_OUTPUT_PP;
   init.Pull = GPIO_NOPULL;
   init.Speed = GPIO_SPEED_FREQ_HIGH;
-  u32 red_led_dio_index = dio_add_output(s8_lit("red_led"), &init, GPIOG, 0);
-  dio_output_set(red_led_dio_index, 1);
+  global_error_dio_id = dio_add_output(s8_lit("red_led"), &init, GPIOG, 0);
+  global_error_dio_set = dio_output_set;
 
   // no protection against hard faults
   // a lot easier to get a serial connection in the field than to attach a debugger
@@ -142,7 +142,13 @@ int main(void)
   // could look at what is at start of ram or flash (comparing u8 and u32 tells endianness)
   // a watchdog timer could reset and get ourselves out of fault handlers 
   mem_add_console_cmds();
+
+  blinkies_init(perm_arena, 4);
+  u32 green_blinky = blinky_create(green_led_dio_index, 10, 500, 1000, 1000);
+  //blinky_start(green_blinky);
    
+
+
   // TODO(Ryan): Count and store any runtime update errors under 'main'
   // typical to log error and then update counter
   // TODO(Ryan): Count super loop min, max, avg time (microsecond average loop time is more likely, which SysTick won't see)
