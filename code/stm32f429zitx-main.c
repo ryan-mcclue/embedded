@@ -1,6 +1,8 @@
 // IMPORTANT(Ryan): Remove #defines to enable peripherals when required
 //#include "stm32f4xx_hal_conf.h"
 
+// TODO(Ryan): Seems that in cubeIDE configuration can specify using LL instead of HAL for BSP generation?
+
 // TODO(Ryan): Have macro definition like in stb libraries to allow for mocking
 
 // IMPORTANT(Ryan): For a function to be mocked/wrapped, it must be in a separate translation unit

@@ -9,10 +9,11 @@ enum {
   LOG_LEVEL_INFO,
   LOG_LEVEL_DEBUG,
   LOG_LEVEL_VERBOSE,
+  LOG_LEVEL_TRACE,
   LOG_LEVEL_COUNT
 };
 
-#define LOG_LEVEL_NAMES_STR "(error|warning|info|debug|verbose)"
+#define LOG_LEVEL_NAMES_STR "(error|warning|info|debug|verbose|trace)"
 
 INTERNAL char *
 log_level_str(LOG_LEVEL log_level)
@@ -42,6 +43,10 @@ log_level_str(LOG_LEVEL log_level)
     {
       result = "VERBOSE"; 
     } break;
+    case LOG_LEVEL_TRACE:
+    {
+      result = "TRACE"; 
+    } break;
   }
 
   return result;
@@ -56,7 +61,7 @@ log_level_str(LOG_LEVEL log_level)
 #define LOG_WARNING(fmt, ...) \
   do { \
     if (global_console.log_active && global_console.log_level >= LOG_LEVEL_WARNING) \
-      console_log("WARNING: " fmt, ##__VA_ARGS__); \
+      console_log("WRN: " fmt, ##__VA_ARGS__); \
   } while (0) 
 
 #define LOG_INFO(fmt, ...) \
@@ -68,13 +73,19 @@ log_level_str(LOG_LEVEL log_level)
 #define LOG_DEBUG(fmt, ...) \
   do { \
     if (global_console.log_active && global_console.log_level >= LOG_LEVEL_DEBUG) \
-      console_log("DEBUG: " fmt, ##__VA_ARGS__); \
+      console_log("DBG: " fmt, ##__VA_ARGS__); \
   } while (0) 
 
 #define LOG_VERBOSE(fmt, ...) \
   do { \
     if (global_console.log_active && global_console.log_level >= LOG_LEVEL_VERBOSE) \
-      console_log("VERBOSE: " fmt, ##__VA_ARGS__); \
+      console_log("VRB: " fmt, ##__VA_ARGS__); \
+  } while (0) 
+
+#define LOG_TRACE(fmt, ...) \
+  do { \
+    if (global_console.log_active && global_console.log_level >= LOG_LEVEL_TRACE) \
+      console_log("TRC: " fmt, ##__VA_ARGS__); \
   } while (0) 
 
 

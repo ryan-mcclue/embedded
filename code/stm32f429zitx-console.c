@@ -377,6 +377,11 @@ console_execute_cmd(String8 raw_str)
       global_console.log_level = LOG_LEVEL_VERBOSE;
       console_printf("Log level set to VERBOSE\n");
     }
+    else if (s8_match(first_token->string, s8_lit("trace"), S8_MATCH_FLAG_CASE_INSENSITIVE))
+    {
+      global_console.log_level = LOG_LEVEL_TRACE;
+      console_printf("Log level set to TRACE\n");
+    }
     else
     {
       console_printf("Unknown command: %.*s\n", s8_varg(first_token->string));
