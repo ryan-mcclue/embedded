@@ -244,9 +244,14 @@ int main(void)
   NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 
+  // TODO(Ryan): How does adding a capacitor help debouncing?
+  // Also, what does capacitor between EN (voltage regulator enable pin) to ground do? (to ground will disable it, but the capacitor part?)
+
   // interesting US GPS is free GNSS
   
   // important to know how to write to flash, e.g. log data and when connection to wireless available, transfer
+  // dual-bank flash more expensive?
+  // bootloader ideally have external flash that stores old and new version (could also partition single flash)
   
   // connected with 2 channel stepper motors, 4 channel DC motors, 8 channel servos,
   // mean stepper motors use more current?

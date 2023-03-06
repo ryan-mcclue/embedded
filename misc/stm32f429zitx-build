@@ -47,6 +47,9 @@ else
   error "Currently only support linux as build machine"
 fi
 
+# TODO(Ryan): Add an auto-incrementing build number file?
+# Solidify this into formal branch strategies with CI 
+
 # NOTE(Ryan): This file is ignored by source control to allow tweaking of build params without affecting history
 source "private/build-params"
 param_compiler=${param_compiler:-"arm-none-eabi-gcc"}

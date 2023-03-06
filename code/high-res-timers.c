@@ -1,8 +1,15 @@
 // SPDX-License-Identifier: zlib-acknowledgement
 
+// TODO(Ryan): PID control loops
+
+// TODO(Ryan): With debugging, also inspect peripheral registers
+// Could just use an IO line if LED/serial debugging to impactful
+
   // high-res 16/32bit timer very flexible:
   //   * irq
-  //   * rotary encoder?
+  //   * rotary encoder? 
+  //   (uses quadrature signal of encoder to driver counter, rather than bus clock)
+  //   (sends two signals? could just bit-bang with GPIO?)
   //   * pwm
   //   * adc (effectively set sample rate)
   // timer properties: 
@@ -16,10 +23,13 @@ struct HighResTimer
 {
   u32 clock_speed;
   u32 num_channels;
-  u32 period; // the same as counter target?
-  u32 prescaler; // how much clock source is scaled, so 100MHz prescaler 4 gives 25MHz
-  u32 counter_target, counter_value;
+  u32 prescaler; // the size of this dependent of timer size (check the size of this as could overflow)
+  // how much clock source is scaled 
+  // so 100MHz clock, prescaler 4, gives 25MHz, i.e. 25billion counter ticks per second
+  u32 period; 
+  // how many ticks till interrupt triggered 
   u32 irq_priority;
+  u32 counter_target, counter_value;
 };
 
 INTERNAL void
@@ -33,7 +43,29 @@ init_high_res_timer1(void)
   timer1.base = TIM1;
   timer1.irq = TIM1_UP_TIM10_IRQn;
 
+  handle.Init.CounterMode = TIM_COUNTERMODE_UP;
+  handle.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  handle.Init.RepetitionCounter = 0x0;
+  handle.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE; // auto reload register
+  HAL_TIM_Base_Init();
+
   __HAL_RCC_TIM1_CLK_ENABLE();
+
+  NVIC_EnableIRQ();
+}
+
+void
+start_timer(void)
+{
+  __HAL_TIM_ENABLE_IT(&handle, TIM_IT_UPDATE);
+  __HAL_TIM_ENABLE(&handle);
+}
+
+void
+stop_timer(void)
+{
+  __HAL_TIM_DISABLE(&handle);
+  __HAL_TIM_DISABLE_IT(&handle, TIM_IT_UPDATE);
 }
 
 void
@@ -61,4 +93,6 @@ interrupt_handler(void)
       } break;
     }
   }
+
+  __HAL_TIM_CLEAR_FLAG(&handle, TIM_FLAG_UPDATE);
 }
