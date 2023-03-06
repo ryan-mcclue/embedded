@@ -242,10 +242,14 @@ i2c_interrupt()
 // delay after sending command to avoid getting NAK as device does no clock stretching
 
 // look for algorithm that instructs how to interpret raw sensor bytes, i.e. convert signal
+// may require reading configuration values from register
+
 // if working with integers, be aware of order of operations in calculations to avoid loss of precision
 
 // if hardware performs CRC, must provide inputs for CRC used? 
 
 // sensor may perform oversampling, i.e. much higher than Nyquist, in order to reduce noise
+// increased oversampling will increase output resolution bits
+
 // look at measurement time, so know how long to wait before actually reading result?
 

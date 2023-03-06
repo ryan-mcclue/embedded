@@ -1,12 +1,17 @@
 // IMPORTANT(Ryan): Remove #defines to enable peripherals when required
 //#include "stm32f4xx_hal_conf.h"
 
+// TODO(Ryan): Know general properties of MCU families, e.g. STM32F7s etc.
+
 // TODO(Ryan): Seems that in cubeIDE configuration can specify using LL instead of HAL for BSP generation?
 
 // TODO(Ryan): Have macro definition like in stb libraries to allow for mocking
 
 // IMPORTANT(Ryan): For a function to be mocked/wrapped, it must be in a separate translation unit
 // In other words, only function declaration can be present
+
+// IMPORTANT(Ryan): When selecting raw-mcu, will come in different package sizes, i.e number of pins.
+// So, a smaller package size might not have pins mapped to a peripheral on the MCU, e.g I2S
 
 #include "base-inc.h"
 
@@ -115,6 +120,17 @@ stat_avg_us(Stat* stat)
   }
 }
 
+void 
+EXTI15_10_IRQHandler(void)
+{
+  if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_13))
+  {
+    console_printf("interrupt triggered\n");   
+    // IMPORTANT(Ryan): Interrupt flags must be manually cleared to avoid retriggering
+    __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_13);
+  }
+}
+
 #if defined(TEST_BUILD)
 int testable_main(void)
 #else
@@ -215,21 +231,17 @@ int main(void)
   u32 green_blinky = blinky_create(green_led_dio_index, 10, 500, 1000, 1000);
   //blinky_start(green_blinky);
    
-
-  Stat loop_stat = get_stat();
-
-  // the DWT_CYCCNT register is implementation dependent
-
-  // TODO(Ryan): Count and store any runtime update errors under 'main'
-  // typical to log error and then update counter
-  // TODO(Ryan): Count super loop min, max, avg time (microsecond average loop time is more likely, which SysTick won't see)
-  // IMPORTANT(Ryan): Super loop has weaknesses. Implication of say, a GPS module performing trigonometry in 10ms, means
-  // other modules have to wait 10ms before they can run.
-  // In an RTOS, we could have the GPS prempted.
-  // However, an RTOS brings in design issues that must be solved, i.e. accessing data from multiple threads
-
-
-
+  // schematic ferrite-bead is inductor? basically suppresion for high frequencies, so suggest susceptible to HF noise 
+  // non-maskable NRST will typically have internal pull-up on it
+  // IMPORTANT(Ryan): HAL overcomplicates this initialisation
+  init.Pin = GPIO_PIN_13;
+  init.Mode = GPIO_MODE_IT_RISING;
+  init.Pull = GPIO_NOPULL;
+  init.Speed = GPIO_SPEED_FREQ_LOW;
+  u32 user_btn_dio_index = dio_add_output(s8_lit("user_btn_exti"), &init, GPIOC, 0);
+  // IMPORTANT(Ryan): Most onboard buttons will have some debouncing circuitry already on them   
+  NVIC_SetPriority(EXTI15_10_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 10, 0));
+  NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 
   // interesting US GPS is free GNSS
@@ -309,6 +321,15 @@ int main(void)
   // RTC can be used to timestamp data
 
 
+  // TODO(Ryan): Count and store any runtime update errors under 'main'
+  // typical to log error and then update counter
+  // TODO(Ryan): Count super loop min, max, avg time (microsecond average loop time is more likely, which SysTick won't see)
+  // IMPORTANT(Ryan): Super loop has weaknesses. Implication of say, a GPS module performing trigonometry in 10ms, means
+  // other modules have to wait 10ms before they can run.
+  // In an RTOS, we could have the GPS prempted.
+  // However, an RTOS brings in design issues that must be solved, i.e. accessing data from multiple threads
+  // the DWT_CYCCNT register is implementation dependent
+  Stat loop_stat = get_stat();
 
   // IMPORTANT(Ryan): Expect serial terminal to append newline
   while (FOREVER)
