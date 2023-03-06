@@ -179,7 +179,6 @@ int main(void)
   SLL_QUEUE_PUSH(uart_cmd_system->first, uart_cmd_system->last, uart_cmd_system_status_cmd);
   SLL_QUEUE_PUSH(global_console.first, global_console.last, uart_cmd_system);
 
-
   stm32f429zitx_create_timers(perm_arena, 5); 
  
 
@@ -231,6 +230,7 @@ int main(void)
   u32 green_blinky = blinky_create(green_led_dio_index, 10, 500, 1000, 1000);
   //blinky_start(green_blinky);
    
+  // IMPORTANT(Ryan): shared interrupts for exti, high-res timers etc.
   // schematic ferrite-bead is inductor? basically suppresion for high frequencies, so suggest susceptible to HF noise 
   // non-maskable NRST will typically have internal pull-up on it
   // IMPORTANT(Ryan): HAL overcomplicates this initialisation
@@ -249,7 +249,8 @@ int main(void)
   // important to know how to write to flash, e.g. log data and when connection to wireless available, transfer
   
   // connected with 2 channel stepper motors, 4 channel DC motors, 8 channel servos,
-  // mean stepper motors more current?
+  // mean stepper motors use more current?
+
 
   // GPIO_MODE_EVT_FALLING
   // an event is a software controlled flow control mechanism
