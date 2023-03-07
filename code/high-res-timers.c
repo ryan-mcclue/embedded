@@ -7,11 +7,14 @@
 
   // high-res 16/32bit timer very flexible:
   //   * irq
-  //   * rotary encoder? 
+  //   * rotary encoder:
   //   (uses quadrature signal of encoder to driver counter, rather than bus clock)
   //   (sends two signals? could just bit-bang with GPIO?)
+  //   (clockwise: clk high first, anti: data high first) 
+  //   (want timer counter register to be triggered by quadrature signal, rather than clock)
   //   * pwm
   //   * adc (effectively set sample rate)
+  //   * measuring pulse lengths of input signals
   // timer properties: 
   //   * clock speed (based on bus its on)
   //   * num channels (so for PWM, want more?)
@@ -30,10 +33,12 @@ struct HighResTimer
   // how many ticks till interrupt triggered 
   u32 irq_priority;
   u32 counter_target, counter_value;
+  callback_func cb;
 };
 
+
 INTERNAL void
-init_high_res_timer1(void)
+init_high_res_timer1_irq(void)
 {
   HighResTimer timer1 = ZERO_STRUCT;
   // IMPORTANT(Ryan): Might have to take into account clock doubling, e.g. multiply by 2
@@ -95,4 +100,66 @@ interrupt_handler(void)
   }
 
   __HAL_TIM_CLEAR_FLAG(&handle, TIM_FLAG_UPDATE);
+}
+
+void
+timer_quadrature_signal(void)
+{
+  GPIO_PIN_4 | GPIO_PIN_5, AF2_TIM3
+  
+  TIM_HandleTypeDef handle = ZERO_STRUCT;
+  handle.Instance = TIM3;
+  handle.Init.Prescaler = 0;
+  handle.Init.Period = 1024; // somewhat arbitrary number
+  handle.Init.RepetitionCounter = 0xFF;
+  handle.Init.CounterMode = TIM_COUNTERMODE_UP;
+  handle.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  handle.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+
+  TIM_Encoder_InitTypeDef encoder = ZERO_STRUCT;
+  encoder.EncoderMode = TIM_ENCODER_TI12; // ???
+  encoder.IC1Polarity = TIM_ICPOLARITY_RISING;
+  encoder.IC1Selection = TIM_ICSELECTION_DIRECTTI;
+  encoder.IC1Prescaler = TIM_ICPSC_DIV1;
+  encoder.IC1Filter = 0; // no need for filter as minimal noise?
+  encoder.IC2Polarity = TIM_ICPOLARITY_RISING;
+  encoder.IC2Selection = TIM_ICSELECTION_DIRECTTI;
+  encoder.IC2Prescaler = TIM_ICPSC_DIV1;
+  encoder.IC2Filter = 0;
+  HAL_TIM_Encoder_Init(&handle, &encoder);
+
+  HAL_TIM_Encoder_Start(&encoder, TIM_CHANNEL_ALL);
+
+  // in superloop
+  // IMPORTANT(Ryan): Must store prev and cur values to determine if wraparound has occured
+  // probably also store signed value, i.e. negative
+  u16 encoder_counter_val = __HAL_TIM_GET_COUNTER(&encoder); // __HAL_TIM_SET_COUNTER(&encoder, 0);
+  // increases if clockwise, decreases if counterclockwise
+  // the amount changed is determined by pulse count, i.e. might be 4
+  // by comparing this with last value, could calculate accleration
+  
+  // TODO(Ryan): Use peripheral decoders in oscilloscope to see bugs easier in a protocol
+  // TODO(Ryan): How to measure signal frequency on oscilloscope. cursors? 
+}
+
+// TODO(Ryan): How to know when to prevent nested interrupts in an ISR?
+
+// IMPORTANT(Ryan): Timer channels share same counter register and interrupt
+// So, in interrupt determine what channel and have an external counter for that
+void
+pwm_init(void)
+{
+  gpio_init.Alternate = GPIO_AF2_TIM4;
+
+  TIM_HandleTypeDef handle = ZERO_STRUCT;
+  handle.Instance = TIM4;
+  handle.Init.Prescaler = 100;
+  handle.Init.Period = 256; // this determines granularity, e.g. 256 brightness levels? 
+  // however, must make sure are within certain frequency, e.g. servo motor requirements
+  handle.Init.RepetitionCounter = 0xFF; // ??
+  handle.Init.CounterMode = TIM_COUNTERMODE_UP;
+  handle.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  handle.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  HAL_TIM_PWM_Init(&handle);
+
 }
