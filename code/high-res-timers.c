@@ -25,7 +25,7 @@ typedef struct HighResTimer HighResTimer;
 struct HighResTimer
 {
   u32 clock_speed;
-  u32 num_channels;
+  u32 num_channels; // more relevent for PWM with channel specific output compare register
   u32 prescaler; // the size of this dependent of timer size (check the size of this as could overflow)
   // how much clock source is scaled 
   // so 100MHz clock, prescaler 4, gives 25MHz, i.e. 25billion counter ticks per second
@@ -144,10 +144,9 @@ timer_quadrature_signal(void)
 
 // TODO(Ryan): How to know when to prevent nested interrupts in an ISR?
 
-// IMPORTANT(Ryan): Timer channels share same counter register and interrupt
-// So, in interrupt determine what channel and have an external counter for that
+// IMPORTANT(Ryan): Timer channels share counter register, period and prescaler.
 void
-pwm_init(void)
+pwm_init(u32 channel_select)
 {
   gpio_init.Alternate = GPIO_AF2_TIM4;
 
@@ -160,6 +159,22 @@ pwm_init(void)
   handle.Init.CounterMode = TIM_COUNTERMODE_UP;
   handle.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   handle.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  // various timer methods change counting mechanics?
   HAL_TIM_PWM_Init(&handle);
 
+  TIM_OC_InitTypeDef channel_init = ZERO_STRUCT;
+  channel_init.OCMode = TIM_OCMODE_PWM1;
+  channel_init.OCIdleState = TIM_OCIDLESTATE_SET;
+  channel_init.Pulse = 0;
+  channel_init.OCPolarity = TIM_OCPOLARITY_HIGH;
+  channel_init.OCFastMode = TIM_OCFAST_ENABLE;
+  HAL_TIM_PWM_ConfigChannel(&handle, &channel_init, TIM_CHANNEL_1);
+
+  HAL_TIM_PWM_Start(&handle, TIM_CHANNEL_1);
+
+  // IMPORTANT(Ryan): This controls the duty cycle
+  // capture compare register
+  // 128 is half of signal period of 256; so half on?
+  __HAL_TIM_SET_COMPARE(&handle, TIM_CHANNEL_1, 128);
+  // could be used to control brightness of LED
 }

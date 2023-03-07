@@ -244,7 +244,9 @@ int main(void)
   NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 
-  // TODO(Ryan): How does adding a capacitor help debouncing?
+  // TODO(Ryan): Debouncing https://youtu.be/yTsjfXsW25A?t=242
+  // Adding capacitor smooths signal, so no bouncing. However, delays signal peak time
+  // Adding a schmitt trigger fixes this. However, cheaper to do in software
   // Also, what does capacitor between EN (voltage regulator enable pin) to ground do? (to ground will disable it, but the capacitor part?)
 
   // interesting US GPS is free GNSS
