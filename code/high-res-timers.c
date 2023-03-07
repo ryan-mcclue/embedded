@@ -138,6 +138,8 @@ timer_quadrature_signal(void)
   // the amount changed is determined by pulse count, i.e. might be 4
   // by comparing this with last value, could calculate accleration
   
+  // IMPORTANT(Ryan): Start with ms signal triggering and work way down
+  // TODO(Ryan): Add a delay if wanting to see signal change easier, e.g. button press
   // TODO(Ryan): Use peripheral decoders in oscilloscope to see bugs easier in a protocol
   // TODO(Ryan): How to measure signal frequency on oscilloscope. cursors? 
 }
