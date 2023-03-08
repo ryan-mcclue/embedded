@@ -180,3 +180,39 @@ pwm_init(u32 channel_select)
   __HAL_TIM_SET_COMPARE(&handle, TIM_CHANNEL_1, 128);
   // could be used to control brightness of LED
 }
+
+void
+rgb_led(void)
+{
+  // using a common anode
+  u8 r, g, b; 
+  u8 brightness;
+
+  b32 inverted; // true: common-cathode, false: common-anode
+
+  TIM_OC_InitTypeDef red_channel = ZERO_STRUCT;
+}
+
+void
+rgb_led_set_colour(u32 colour)
+{
+  f32 brightness_ratio = (brightness / period);  
+  f32 r = red * brightness_ratio;
+
+  set_pwm_val(red_channel, invert ? period - r : r);
+}
+
+// if components draw a lot of current, don't want to power from board as could fry onboard regulator?
+// (in this limitation to safeguard sensitive electronics on board?)
+// servo motors draw more current if actuating more load, i.e. high torque?
+
+// IMPORTANT(Ryan): Higher current PSU is fine, the voltage is what needs to be the same
+// Current draw determined by load, a.k.a resistance. So, will only draw what is needed
+
+// Also, always use switching regulators for high power applications, because unlike linear regulator, switching regulators do not dissipate much heat and are highly efficient at high loads.
+// https://www.dimensionengineering.com/products/de-swadj3/
+void
+servos(void)
+{
+
+}
