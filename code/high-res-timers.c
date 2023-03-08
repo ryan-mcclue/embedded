@@ -14,7 +14,7 @@
   //   (want timer counter register to be triggered by quadrature signal, rather than clock)
   //   * pwm
   //   * adc (effectively set sample rate)
-  //   * measuring pulse lengths of input signals
+  //   * dma (becomes more important when CPU computing UI)
   // timer properties: 
   //   * clock speed (based on bus its on)
   //   * num channels (so for PWM, want more?)
@@ -210,9 +210,29 @@ rgb_led_set_colour(u32 colour)
 // Current draw determined by load, a.k.a resistance. So, will only draw what is needed
 
 // Also, always use switching regulators for high power applications, because unlike linear regulator, switching regulators do not dissipate much heat and are highly efficient at high loads.
-// https://www.dimensionengineering.com/products/de-swadj3/
+
+// regulator and converter same thing (prefer over Zener diode)
+//   * load regulation (how much current draw affects output voltage)
+//   * line regulation (how much input voltage affects output voltage)
+//   * drop-out voltage (at least how much voltage above the output voltage the input voltage should be to not cause problems) 
+//   * buck (step-down)
+//   * boost (step-up)
+//   * buck-boost
+// linear regulator essentially dumps excess voltage
+// switching has a PWM signal that essentially turns on and off; power-efficient
+// look at efficiency curve to see optimal conditions
+
+// servos utilise PID algorithm with potentiometer feedback.
+// it looks at input signal and compares that with potetiometer to see if it needs to move or not
+// 50Hz common
 void
 servos(void)
+{
+  u32 centre_pos, min_pos, max_pos, current_pos;
+}
+
+void
+set_servo_pos(f32 pos)
 {
 
 }
