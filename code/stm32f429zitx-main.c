@@ -137,6 +137,9 @@ int testable_main(void)
 int main(void)
 #endif
 {
+  // TODO(Ryan): Cache init errors separately then handle later, e.g.
+  // if (pwm_init_error || timer_init_error) ...
+
   if (stm32f429zitx_initialise() != STATUS_SUCCEEDED)
   {
     while (1) {}
@@ -312,7 +315,7 @@ int main(void)
   // perhaps implement mocks for simulator also, so can just run anywhere?
 
 
-  // rtc for times like every 24hours?
+  // rtc for times like every 24hours? (used for timestamping data, e.g. logging)
   // a timer is just a basic counter and compare
   // rtc more options and on separate power domain, e.g. drift register, crystal source?
   // more accurate readings as direct clock source not PLL?
