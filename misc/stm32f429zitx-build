@@ -123,6 +123,8 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
   test_linker_flags=("${target_linker_flags[@]}")
   test_linker_flags+=( "-lcmocka" "-Wl,--warn-unresolved-symbols" )
 
+  # -mthumb-interwork ?
+  # TODO(Ryan): Thumb instructions
   target_compiler_flags+=( "-mcpu=cortex-m4" "-mthumb" )
   # NOTE(Ryan): BSP files
   # IMPORTANT(Ryan): Renaming '.s' to '.S' allows for the CPP to act on assembly file

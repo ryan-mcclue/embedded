@@ -222,17 +222,41 @@ rgb_led_set_colour(u32 colour)
 // switching has a PWM signal that essentially turns on and off; power-efficient
 // look at efficiency curve to see optimal conditions
 
+
+// IMPORTANT(Ryan): Always know base frequency of timers, e.g. 100MHz
+// 100MHz <-> 50Hz
+//  1. 100MHz/50Hz = 2MHz
+//  2. Decide on 20000 steps/granularity as equates nicely to 20ms period (so take into account period here, e.g. 1500 == 1.5ms)
+//  3. 2MHz/20000 = period
+
 // servos utilise PID algorithm with potentiometer feedback.
 // it looks at input signal and compares that with potetiometer to see if it needs to move or not
 // 50Hz common
+// to run slower, perhaps only update at 10ms
 void
 servos(void)
 {
-  u32 centre_pos, min_pos, max_pos, current_pos;
+  // IMPORTANT(Ryan): These are with respect to OC counter values
+  u32 centre_pos = 1500;
+  min_pos = 1000;
+  max_pos = 2000;
+  current_pos = centre_pos;
 }
 
 void
 set_servo_pos(f32 pos)
 {
+  if (pos == 0.0f)
+  {
+    current_pos = centre_pos;
+  }
+  else if (pos > 0.0f)
+  {
+    // map pos to range: centre_pos <-> max_pos
+    set_pwm_val(servo_channel, current_pos);
+  }
+  else
+  {
 
+  }
 }

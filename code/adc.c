@@ -3,7 +3,7 @@
 // IMPORTANT(Ryan): When doing a makefile build, warnings won't be reissued if compiled. So, clean useful if debugging
 
 // how are ADC channels distinct?
-// channels to pins (VREFINT channel is constant reference voltage for ADC, VBAT channel is voltage for backup power domain; may also have a CPU temperature channel)
+// channels to pins (VREFINT channel is constant reference voltage for ADC, VBAT channel is voltage for backup power domain; may also have a CPU temperature channel; would have to explicitly enable them as well)
 void
 init_adc(void)
 {
@@ -53,6 +53,7 @@ init_adc(void)
   // as many of these as channels
   ADC_ChannelConfTypeDef channel_init = ZERO_STRUCT;
   channel_init.Channel = ADC_CHANNEL_0; // pin specific
+  // IMPORTANT(Ryan): If read channels one-at-a-time, then multiplexor used
   // for multiple channels, order in which sequenced
   channel_init.Rank = 1; 
   // because of how handling data in this case?
@@ -88,4 +89,50 @@ ADC_IRQHandler(void)
 
     __HAL_ADC_CLEAR_FLAG(&handle, ADC_FLAG_EOC);
   }
+}
+
+GLOBAL u16 global_channel_data[2];
+
+void
+dma(void)
+{
+  // DMA has channels. A stream is where data comes from, i.e. channel will have a stream
+  RCC_DMA_Clock();
+
+  DMA_InitTypeDef dma_init = ZERO_STRUCT;
+  dma_init.DMA_Channel = 0;
+  // where getting data from
+  dma_init.DMA_PeripheralBaseAddr = &ADC1->DR;
+  dma_init.DMA_MemoryBaseAddr = global_channel_data;
+  dma_init.DMA_Dir = DMA_DIR_PeripheralToMemory;
+  // number of items to copy
+  dma_init.DMA_BufferSize = 2;
+
+  dma_init.DMA_PeripheralInc = DMA_PeriphalIncDisable;
+  dma_init.DMA_MemoryInc = DMA_MemoryIncEnable;
+
+  dma_init.DMA_PeripheralDataSize = DMA_PeripheralDataSize_HalfWord;
+  dma_init.DMA_MemoryDataSize = DMA_MemoryDataSize_HalfWord;
+
+  // continously perform copy (this could be optimised)
+  dma_init.DMA_Mode = DMA_Mode_Circular;
+
+  dma_init.DMA_Priority = DMA_Priority_Medium;
+
+  // ??
+  dma_init.DMA_FIFOMode = DMA_FIFOMode_Disable;
+  dma_init.DMA_FIFOThreshold = DMA_FIFOThreshold_1QuarterFull;
+
+  // ??
+  dma_init.DMA_MemoryBurst = DMA_MemoryBurst_Single;
+  dma_init.DMA_PeripheralBurst = DMA_PeripheralBurst_Single;
+
+  DMA_Init(&dma_init, DMA1_STREAM_0);
+  DMA_Start(DMA1_STEAM_0);
+
+  // IMPORTANT(Ryan): Inside of ADC init
+  // ADC_DMAEnableRequest();
+  // ADC_DMARequestAfterLastTransferCmd(); (start request after conversion finished)
+  // So, seems no interrupt here?
+
 }

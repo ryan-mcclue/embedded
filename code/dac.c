@@ -20,6 +20,7 @@ dac_init(void)
   DAC_Start();
 
   // write into DAC data register, e.g. max 4095 for 12bit
+  // will correspond to voltage level, e.g. max 4095 3.3V
   
 }
 
