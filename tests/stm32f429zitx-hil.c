@@ -1,5 +1,11 @@
 // SPDX-License-Identifier: zlib-acknowledgement
 
+// Run these tests on board
+// If passes, assign a serial number to this build/revision
+// When that serial-number is "fetched" by the test/programming PC, it's entered into a database together with date-of-manufacture, firmware revision, PCBA revision, etc, etc. All to provide traceability in case we need to do a recall. (All devices made on this assembly-line, week 40 are known bad, etc)
+// The serial# and possibly some calibration data is stored in a separate section of flash on the device that won't be overriden by re-flashing.
+// (so, this program needs to communicate with a database)
+
 #include "base-inc.h"
 
 #include "test-inc.h"
