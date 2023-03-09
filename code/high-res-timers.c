@@ -161,7 +161,7 @@ pwm_init(u32 channel_select)
   handle.Init.CounterMode = TIM_COUNTERMODE_UP;
   handle.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   handle.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
-  // various timer methods change counting mechanics?
+  // various timer methods change counting modes/mechanics?
   HAL_TIM_PWM_Init(&handle);
 
   TIM_OC_InitTypeDef channel_init = ZERO_STRUCT;
@@ -232,16 +232,19 @@ rgb_led_set_colour(u32 colour)
 // servos utilise PID algorithm with potentiometer feedback.
 // it looks at input signal and compares that with potetiometer to see if it needs to move or not
 // 50Hz common
-// to run slower, perhaps only update at 10ms
+// IMPORTANT(Ryan): Distinction between sampling time and update/reading time, e.g. to run slower, perhaps only update at 10ms 
 void
 servos(void)
 {
-  // IMPORTANT(Ryan): These are with respect to OC counter values
+  // IMPORTANT(Ryan): These are with respect to OC counter values.
+  // They are duty cycles
   u32 centre_pos = 1500;
   min_pos = 1000;
   max_pos = 2000;
   current_pos = centre_pos;
 }
+
+// TODO(Ryan): use volatile more in interrupts
 
 void
 set_servo_pos(f32 pos)

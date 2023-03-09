@@ -23,6 +23,7 @@ dac_init(void)
   // will correspond to voltage level, e.g. max 4095 3.3V
   
 }
+// with active speaker, just adjust period of PWM to get varying sound?
 
 // Higher addresses in flash typically require special priveleges to write to, e.g. trace control?
 

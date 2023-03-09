@@ -394,3 +394,15 @@ SPI flash erase byte is 0xff? Can only set by sectors?
   Pages vs sectors vs buffers (would be slower, i.e. must take into account sector boundaries)?
   EM100Pro-G2 SPI NOR Flash Emulator
 
+
+## Week 4
+Everything in embedded systems is input/output/timers, i.e. hold some line high for a period of time
+
+Although plenty of libraries, like Arduino, mbed no JTAG, just serial.
+Also, seriously bloated, e.g. setting duty cycle checks config, etc. when it just needs to set a register value
+
+Hardware semaphores used in MCU to coordinate booting between multiple CPUs, e.g. M4 + M7
+
+When setting a mask, know that at some stage it will probably end up in a register  
+
+When reading through driver code, must have datasheet up to understand why they are doing certain things
