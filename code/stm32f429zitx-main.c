@@ -120,6 +120,13 @@ stat_avg_us(Stat* stat)
   }
 }
 
+// IMPORTANT(Ryan): 2 reasons for interrupts
+// 1. Things that must be handled immediately
+// 2. Computationally efficient
+// For communication between interrupt and main loop use a global.
+// (if in an OS, perhaps a semaphore or mailbox etc.)
+// These must be volatile, e.g. while (!flag) not being optimised away
+// Should avoid volatile struct. Only use if literally all containg variables are volatile otherwise large performance declines
 void 
 EXTI15_10_IRQHandler(void)
 {

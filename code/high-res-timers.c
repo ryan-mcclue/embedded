@@ -154,7 +154,8 @@ pwm_init(u32 channel_select)
 
   TIM_HandleTypeDef handle = ZERO_STRUCT;
   handle.Instance = TIM4;
-  handle.Init.Prescaler = 100;
+  handle.Init.Prescaler = 100; // PSC register
+  // a.k.a ARR (auto-reload-register)?
   handle.Init.Period = 256; // this determines granularity, e.g. 256 brightness levels? 
   // however, must make sure are within certain frequency, e.g. servo motor requirements
   handle.Init.RepetitionCounter = 0xFF; // ??
@@ -175,7 +176,7 @@ pwm_init(u32 channel_select)
   HAL_TIM_PWM_Start(&handle, TIM_CHANNEL_1);
 
   // IMPORTANT(Ryan): This controls the duty cycle
-  // capture compare register
+  // CCR (capture compare register)
   // 128 is half of signal period of 256; so half on?
   __HAL_TIM_SET_COMPARE(&handle, TIM_CHANNEL_1, 128);
   // could be used to control brightness of LED
@@ -241,7 +242,7 @@ servos(void)
   u32 centre_pos = 1500;
   min_pos = 1000;
   max_pos = 2000;
-  current_pos = centre_pos;
+  current_pos = centre_pos; // set this on startup
 }
 
 // TODO(Ryan): use volatile more in interrupts
