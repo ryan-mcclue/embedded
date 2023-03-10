@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: zlib-acknowledgement
  
+// sound generation:
+// https://learning.edx.org/course/course-v1:UTAustinX+UT.6.20x+3T2022/home
+
 // without DAC, require PWM and an output filter?
 // typically channels can be used simultaneously, i.e. dual mode; not a multiplexor?
 
