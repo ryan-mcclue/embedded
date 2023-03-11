@@ -1,3 +1,5 @@
+// IMPORTANT(Ryan): APPLY FOR RELEVENT INTERNSHIP WHEN NEAR END OF READYGRAD SO HAVE A 'CURRENT EMPLOYER' FIELD
+
 // IMPORTANT(Ryan): Remove #defines to enable peripherals when required
 //#include "stm32f4xx_hal_conf.h"
 
@@ -37,6 +39,7 @@
   #include "stm32f4xx_hal_rcc.c"
   #include "stm32f4xx_hal_gpio.c"
   #include "stm32f4xx_hal_uart.c"
+  #include "stm32f4xx_hal_spi.c"
 #endif
 
 #include "stm32f429zitx-config.h"
@@ -46,6 +49,7 @@
 #include "stm32f429zitx-dio.c"
 #include "stm32f429zitx-mem.c"
 #include "blinky.c"
+#include "spi.c"
 
 // TODO(Ryan): If code size a problem perhaps:
 #if 0
@@ -132,7 +136,15 @@ EXTI15_10_IRQHandler(void)
 {
   if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_13))
   {
-    console_printf("interrupt triggered\n");   
+    if (spi_test() == STATUS_SUCCEEDED)
+    {
+      console_printf("spi test success\n");   
+    }
+    else
+    {
+      console_printf("spi test failed\n");   
+    }
+
     // IMPORTANT(Ryan): Interrupt flags must be manually cleared to avoid retriggering
     __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_13);
   }

@@ -223,6 +223,9 @@ rgb_led_set_colour(u32 colour)
 // switching has a PWM signal that essentially turns on and off; power-efficient
 // look at efficiency curve to see optimal conditions
 
+// a level shifter logic standards, e.g. TTL to CMOS.
+// doesn't handle varying input voltages (so really only useful for 5V to 3.3V)
+
 
 // IMPORTANT(Ryan): Always know base frequency of timers, e.g. 100MHz
 // 100MHz <-> 50Hz
