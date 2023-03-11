@@ -70,6 +70,10 @@ test_linker_flags=()
 hil_compiler_flags=()
 hil_linker_flags=()
 
+# MilePostIncludeDirs=($(find $MilePostSrcDir -type d))
+# MilePostIncludes=${MilePostIncludeDirs[@]/#/-I}
+
+
 if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$param_mcu" == "stm32f429zitx" && "$build_os" == "linux" ]]; then
 
   # TODO(Ryan): Derive version string from a meaningful source

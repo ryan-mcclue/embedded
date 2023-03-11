@@ -2,6 +2,10 @@
 #if !defined(STM32F429ZITX_CONSOLE_H)
 #define STM32F429ZITX_CONSOLE_H
 
+// TODO(Ryan): Each module have:
+// #define LOG_SUBSYSTEM "subsystem"
+// #undef LOG_SUBSYSTEM
+
 typedef u32 LOG_LEVEL;
 enum {
   LOG_LEVEL_ERROR,
@@ -154,6 +158,7 @@ struct UartInfo
 {
   UART_HandleTypeDef handle;
 
+  // TODO(Ryan): Encapsulate with ring_buffer struct (thesis_quadrant)
   u32 rx_buf_read_index, rx_buf_write_index;
   u8 *rx_buf;
   u32 rx_buf_len;

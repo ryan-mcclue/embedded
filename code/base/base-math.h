@@ -6,7 +6,21 @@
 
 #include <math.h>
 
+static inline u64 next_pow2_u64(u64 x)
+{
+	x--;
+	x |= x>>1;
+	x |= x>>2;
+	x |= x>>4;
+	x |= x>>8;
+	x |= x>>16;
+	x |= x>>32;
+	x++;
+	return(x);
+}
+
 #define square(x) ((x) * (x))
+#define cube(x) ((x) * (x) * (x))
 
 // TODO(Ryan): Investigate using SIMD, e.g: 
 //   _mm_cvtss_f32(_mm_sqrt_ss(_mm_set1_ps(x)));
