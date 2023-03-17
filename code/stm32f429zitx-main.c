@@ -51,10 +51,10 @@
 #include "blinky.c"
 #include "spi.c"
 
+// classic RC circuit exponential discharge, 95% fall time 
+
 // TODO(Ryan): If code size a problem perhaps:
-#if 0
 #define LIT(x) (sizeof(x) < MAX_LIT_LEN ? (x) : 0)
-#endif
 
 // TODO(Ryan): Support 'uart ?'
 INTERNAL CONSOLE_CMD_STATUS
@@ -136,14 +136,7 @@ EXTI15_10_IRQHandler(void)
 {
   if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_13))
   {
-    if (spi_test() == STATUS_SUCCEEDED)
-    {
-      console_printf("spi test success\n");   
-    }
-    else
-    {
-      console_printf("spi test failed\n");   
-    }
+    spi_test();
 
     // IMPORTANT(Ryan): Interrupt flags must be manually cleared to avoid retriggering
     __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_13);
@@ -201,13 +194,13 @@ int main(void)
   SLL_QUEUE_PUSH(uart_cmd_system->first, uart_cmd_system->last, uart_cmd_system_status_cmd);
   SLL_QUEUE_PUSH(global_console.first, global_console.last, uart_cmd_system);
 
-  stm32f429zitx_create_timers(perm_arena, 5); 
+  stm32f429zitx_create_timers(perm_arena, 16); 
  
 
   // digital IO
   // for electronics, anode is where current flows in, so positive.
   // longer lead for LED
-  dio_init(perm_arena, 8);
+  dio_init(perm_arena, 16);
 
   GPIO_InitTypeDef init = ZERO_STRUCT;
   init.Pin = GPIO_PIN_2;
@@ -264,6 +257,11 @@ int main(void)
   // IMPORTANT(Ryan): Most onboard buttons will have some debouncing circuitry already on them   
   NVIC_SetPriority(EXTI15_10_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 10, 0));
   NVIC_EnableIRQ(EXTI15_10_IRQn);
+
+  if (spi_init() != STATUS_SUCCEEDED)
+  {
+    __bp();
+  }
 
 
   // TODO(Ryan): Debouncing https://youtu.be/yTsjfXsW25A?t=242

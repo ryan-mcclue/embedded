@@ -25,10 +25,22 @@
 
 // TODO(Ryan): delay and roll functionality for oscilloscope to slowly watch signal progress
 
+typedef struct SpiState SpiState;
+struct SpiState
+{
+  SPI_HandleTypeDef handle;
+  u32 nss_dio, clk_dio, mosi_dio, miso_dio;
+};
+
+GLOBAL SpiState global_spi_state; 
+
 INTERNAL STATUS
-spi_test(void)
+spi_init(void)
 {
   STATUS result = STATUS_FAILED;
+
+  // Pulls are only for undriven signals, which most commonly would be inputs. 
+  // Outputs are driven
 
   GPIO_InitTypeDef init = ZERO_STRUCT;
   init.Pin = GPIO_PIN_11;
@@ -36,16 +48,21 @@ spi_test(void)
   init.Alternate = GPIO_AF5_SPI4;
   init.Pull = GPIO_PULLUP;
   init.Speed = GPIO_SPEED_FREQ_HIGH;
-  // IMPORTANT(Ryan): If controlled by software, this will be invert
-  // Example transaction: HAL_GPIO_WritePin(low); HAL_SPI_Transmit(); HAL_GPIO_WritePin(high);
-  u32 spi4_nss_index = dio_add_output(s8_lit("spi4_nss"), &init, GPIOE, 0);
+  // IMPORTANT(Ryan): NSS is not literal chip select equivalent
+  // It will be set to low if in master mode as long as SPI enabled.
+  // Will go high if SPI disabled.
+  // Actual chip select would be GPIO controlled
+  // IMPORTANT(Ryan): Not only errata important, but also check pin mapping correspondance
+  global_spi_state.nss_dio = dio_add_output(s8_lit("spi4_nss"), &init, GPIOE, 0);
+
+  // __HAL_SPI_DISABLE
 
   init.Pin = GPIO_PIN_12;
   init.Mode = GPIO_MODE_AF_PP;
   init.Alternate = GPIO_AF5_SPI4;
   init.Pull = GPIO_NOPULL;
   init.Speed = GPIO_SPEED_FREQ_HIGH;
-  u32 spi4_clk_index = dio_add_output(s8_lit("spi4_clk"), &init, GPIOE, 0);
+  global_spi_state.clk_dio = dio_add_output(s8_lit("spi4_clk"), &init, GPIOE, 0);
 
   // TODO(Ryan): If not required, don't bother setting up? 
   init.Pin = GPIO_PIN_13;
@@ -53,14 +70,14 @@ spi_test(void)
   init.Alternate = GPIO_AF5_SPI4; 
   init.Pull = GPIO_NOPULL;
   init.Speed = GPIO_SPEED_FREQ_HIGH;
-  u32 spi4_miso_index = dio_add_input(s8_lit("spi4_miso"), &init, GPIOE, 0);
+  global_spi_state.miso_dio = dio_add_input(s8_lit("spi4_miso"), &init, GPIOE, 0);
 
   init.Pin = GPIO_PIN_14;
   init.Mode = GPIO_MODE_AF_PP;
   init.Alternate = GPIO_AF5_SPI4;
   init.Pull = GPIO_NOPULL;
   init.Speed = GPIO_SPEED_FREQ_HIGH;
-  u32 spi4_mosi_index = dio_add_output(s8_lit("spi4_mosi"), &init, GPIOE, 0);
+  global_spi_state.mosi_dio = dio_add_output(s8_lit("spi4_mosi"), &init, GPIOE, 0);
 
   init.Pin = GPIO_PIN_10;
   init.Mode = GPIO_MODE_OUTPUT_PP;
@@ -85,51 +102,63 @@ spi_test(void)
   // __HAL_RCC_SPI4_FORCE_RESET();
   // __HAL_RCC_SPI4_RELEASE_RESET();
 
-  SPI_HandleTypeDef hspi = ZERO_STRUCT;
-  hspi.Instance = SPI4;
-  hspi.Init.Mode = SPI_MODE_MASTER; 
+  global_spi_state.handle.Instance = SPI4;
+  global_spi_state.handle.Init.Mode = SPI_MODE_MASTER; 
+
   // can make SPI unidirectional, however we want bidirectional
-  hspi.Init.Direction = SPI_DIRECTION_2LINES; 
+  global_spi_state.handle.Init.Direction = SPI_DIRECTION_2LINES; 
   // dependent on device interacting with: flash device only supports 8bits
-  hspi.Init.DataSize = SPI_DATASIZE_8BIT; 
+  global_spi_state.handle.Init.DataSize = SPI_DATASIZE_8BIT; 
   // dependent on device interacting with
-  hspi.Init.CLKPolarity = SPI_POLARITY_LOW; 
-  hspi.Init.CLKPhase = SPI_PHASE_1EDGE; 
-  // in situations where multiple devices, i.e. multiple NSS signals, would would software
-  hspi.Init.NSS = SPI_NSS_HARD_OUTPUT; 
+  global_spi_state.handle.Init.CLKPolarity = SPI_POLARITY_LOW; 
+  global_spi_state.handle.Init.CLKPhase = SPI_PHASE_1EDGE; 
+  // in situations where multiple devices, i.e. multiple NSS signals, would software
+  global_spi_state.handle.Init.NSS = SPI_NSS_HARD_OUTPUT; 
   // this is dependent on SPI peripheral bus clock, e.g. APB 100MHz
   // we know, device can operate up to 60MHz, however this if fine for now
   // better off starting at a low speed to rule out possible noise from long wires on dev board
-  hspi.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
-  hspi.Init.FirstBit = SPI_FIRSTBIT_MSB;
-  hspi.Init.TIMode = SPI_TIMODE_DISABLE;
-  hspi.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-  hspi.Init.CRCPolynomial = 0;
-  if (HAL_SPI_Init(&hspi) == HAL_OK)
+  global_spi_state.handle.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
+  global_spi_state.handle.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  global_spi_state.handle.Init.TIMode = SPI_TIMODE_DISABLE;
+  global_spi_state.handle.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  global_spi_state.handle.Init.CRCPolynomial = 0;
+  if (HAL_SPI_Init(&global_spi_state.handle) == HAL_OK)
   {
-    // __HAL_SPI_ENABLE();
-    // NVIC_Priority()
-    // SPI4_IRQn
-
-    u8 data_tx[4] = {0xde, 0xad, 0xbe, 0xef};
-    u8 data_rx[4];
-
-    HAL_SPI_TransmitReceive(&hspi, data_tx, data_rx, 4, 1000);
-
     result = STATUS_SUCCEEDED;
   }
+  // dio_output_set(global_spi_state.nss_dio, 1);
+
+  // There is usually at least one more signal, providing framing, but as SPI is more a defacto than a formal standard, different devices treat this signal differently. 
+
+  // NSS is weird, it's an open collector output that needs a pull up resistor to work properly.
+  // Throw a ~5k pull up on it and it'll go
+  // If a pullup is switched on for this pin in GPIOx_PUPDR, the pin will be pulled up, but this may take time, depending on the capacitive loading on the pin, given the pullup is relatively weak (nominally 40kΩ). 
 
   return result;
 }
 
-void
-spi_display(void)
+INTERNAL void
+spi_test(void)
 {
-  // monochrome displays bit orientated
-  
+  // CMSIS SVD (system view description) file is XML
+  // typically contained in a ZIP .pack files 
+  // Good place for .pack files from Keil MDK5: https://www.keil.com/dd2/pack/ 
+
+  u8 data_tx[4] = {0xde, 0xad, 0xbe, 0xef};
+
+  HAL_SPI_Transmit(&global_spi_state.handle, data_tx, 4, 1000);
+
+  // IMPORTANT(Ryan): Required for NSS
+  // TODO(Ryan): Overcome lag in signal by manually controlling with GPIO
+  __HAL_SPI_DISABLE(&global_spi_state.handle);
+
   // IMPORTANT(Ryan): Don't supply power to screen before we know code is correct to avoid damaging screen
+  // monochrome displays bit orientated
+  // bus timing frequency (4MHz max.)
+  // instruction set (example instruction)
+  // initialisation procedure (res pulse at least 100ms after Vdd)
+  
+
 }
 
-//  void
-//  transmit/recieve/transceive();
 // https://youtu.be/H_5QQQnP0zg?list=PLtVUYRe-Z-mcjXXFBte61L8SjyI377VNq&t=1160
