@@ -1,3 +1,10 @@
+https://stm32f4-discovery.net/2014/09/stm32f4-tutorials-one-place/
+
+for embedded software security:
+ * Keep a software BOM. Actually update your dependencies when vulnerabilities are discovered and addressed.  
+ * Using and verifying hashes of executables during updates
+ * Actually test your software (e.g., fuzzing, to make sure you validate your inputs)  
+
 https://github.com/wntrblm/Castor_and_Pollux
 
 linker-script
