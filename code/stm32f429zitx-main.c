@@ -136,7 +136,7 @@ EXTI15_10_IRQHandler(void)
 {
   if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_13))
   {
-    spi_test();
+    spi_init();
 
     // IMPORTANT(Ryan): Interrupt flags must be manually cleared to avoid retriggering
     __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_13);
@@ -258,10 +258,12 @@ int main(void)
   NVIC_SetPriority(EXTI15_10_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 10, 0));
   NVIC_EnableIRQ(EXTI15_10_IRQn);
 
+  /*
   if (spi_init() != STATUS_SUCCEEDED)
   {
     __bp();
   }
+  */
 
 
   // TODO(Ryan): Debouncing https://youtu.be/yTsjfXsW25A?t=242

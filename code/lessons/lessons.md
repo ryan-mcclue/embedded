@@ -406,3 +406,105 @@ Hardware semaphores used in MCU to coordinate booting between multiple CPUs, e.g
 When setting a mask, know that at some stage it will probably end up in a register  
 
 When reading through driver code, must have datasheet up to understand why they are doing certain things
+
+## Week 5
+Technically everything with an 'if' is a state machine
+
+For a state machine, think about each state:
+* action (i.e internal behaviour)
+* overlays, e.g. animation, audio
+* inputs
+* state transitions
+Adding a state is cheap
+
+If have to give to QA, encode in a spreadsheet to present as a state table
+
+Have nested state machines
+TODO: understand table based state machine
+TODO: https://www.youtube.com/playlist?list=PLPW8O6W-1chwyTzI3BHwBLbGQoPFxPAPM for RTOS
+
+```
+enum STATE
+{
+  STATE_START,
+};
+
+#define STATE_NONE STATE_START (error handling?)
+
+struct StateInfo
+{
+  STATE current_state;
+  char *debug_state_name;
+
+  u32 anim_t;
+
+  // input received, what state will jump to
+  STATE button_pressed;
+
+  // actions
+  function_pointer(prev_state, ...) action; // this is where can have large switch statement we expect in state machines?
+};
+
+// TODO(Ryan): perhaps M
+
+StateInfo state_table[] = 
+{
+
+};
+
+main
+{
+  state->action_fp(NULL, ...);
+}
+
+enum states {
+	START,
+	LOOP,
+	END,
+} state;
+
+enum events {
+	START_LOOPING,
+	PRINT_HELLO,
+	STOP_LOOPING,
+};
+
+typedef enum states (*event_handler)(enum states, enum events);
+
+enum states start_looping(enum states state, enum events event) {
+	assert(state == START && event == START_LOOPING);
+	return LOOP;
+}
+
+enum states print_hello(enum states state, enum events event) {
+	assert(state == LOOP && event == PRINT_HELLO);
+	printf("Hello World!\n");
+	return LOOP;
+}
+
+enum states stop_looping(enum states state, enum events event) {
+	assert(state == LOOP && event == STOP_LOOPING);
+	return END;
+}
+
+event_handler transitions[STOP_LOOPING+1][END+1] = {
+	[START] = { [START_LOOPING] = start_looping, },
+	[LOOP] = { [PRINT_HELLO] = print_hello,
+	           [STOP_LOOPING] = stop_looping, },
+};
+
+void step_state(enum events event) {
+	event_handler handler = transitions[event][state];
+	if (!handler)
+		exit(1);
+	state = handler(state, event);
+}
+
+int main(void) {
+	step_state(START_LOOPING);
+	step_state(PRINT_HELLO);
+	step_state(PRINT_HELLO);
+	step_state(STOP_LOOPING);
+	return 0;
+}
+```

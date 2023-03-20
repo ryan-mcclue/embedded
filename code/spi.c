@@ -30,19 +30,63 @@ struct SpiState
 {
   SPI_HandleTypeDef handle;
   u32 nss_dio, clk_dio, mosi_dio, miso_dio;
+  u32 rst_dio, dc_dio, backlight_dio;
 };
 
 GLOBAL SpiState global_spi_state; 
+
+INTERNAL void
+spi_tx(SPI_HandleTypeDef *spi_handle, u8 *data, u16 data_len, u32 timeout)
+{
+  HAL_SPI_Transmit(spi_handle, data, data_len, timeout);
+  __HAL_SPI_DISABLE(spi_handle);
+}
 
 INTERNAL STATUS
 spi_init(void)
 {
   STATUS result = STATUS_FAILED;
 
+  GPIO_InitTypeDef init = ZERO_STRUCT;
+  GPIO_InitTypeDef zeroed_init = ZERO_STRUCT;
+  
+  init.Pin = GPIO_PIN_8;
+  init.Mode = GPIO_MODE_OUTPUT_PP;
+  init.Pull = GPIO_NOPULL;
+  init.Speed = GPIO_SPEED_FREQ_HIGH;
+  global_spi_state.rst_dio = dio_add_output(s8_lit("reset"), &init, GPIOE, 1);
+  // NOTE(Ryan): Generate reset pulse
+  dio_output_set(global_spi_state.rst_dio, 0);
+  HAL_Delay(10);
+  dio_output_set(global_spi_state.rst_dio, 1);
+  HAL_Delay(10);
+  dio_output_set(global_spi_state.rst_dio, 0);
+
+  /*
+  init = zeroed_init;
+  init.Pin = GPIO_PIN_10;
+  init.Mode = GPIO_MODE_OUTPUT_PP;
+  init.Pull = GPIO_NOPULL;
+  init.Speed = GPIO_SPEED_FREQ_HIGH; // TODO(Ryan): Lowering frequency reduces power
+  global_spi_state.backlight_dio = dio_add_output(s8_lit("backlight"), &init, GPIOE, 0);
+  // NOTE(Ryan): Test backlight
+  dio_output_set(global_spi_state.backlight_dio, 1);
+  HAL_Delay(2000);
+  dio_output_set(global_spi_state.backlight_dio, 0);
+  */
+
+  init = zeroed_init;
+  init.Pin = GPIO_PIN_7;
+  init.Mode = GPIO_MODE_OUTPUT_PP;
+  init.Pull = GPIO_NOPULL;
+  init.Speed = GPIO_SPEED_FREQ_HIGH;
+  global_spi_state.dc_dio = dio_add_output(s8_lit("data_control"), &init, GPIOE, 0);
+
+
   // Pulls are only for undriven signals, which most commonly would be inputs. 
   // Outputs are driven
 
-  GPIO_InitTypeDef init = ZERO_STRUCT;
+  init = zeroed_init;
   init.Pin = GPIO_PIN_11;
   init.Mode = GPIO_MODE_AF_PP;
   init.Alternate = GPIO_AF5_SPI4;
@@ -57,6 +101,7 @@ spi_init(void)
 
   // __HAL_SPI_DISABLE
 
+  init = zeroed_init;
   init.Pin = GPIO_PIN_12;
   init.Mode = GPIO_MODE_AF_PP;
   init.Alternate = GPIO_AF5_SPI4;
@@ -64,6 +109,8 @@ spi_init(void)
   init.Speed = GPIO_SPEED_FREQ_HIGH;
   global_spi_state.clk_dio = dio_add_output(s8_lit("spi4_clk"), &init, GPIOE, 0);
 
+  /*
+  init = zeroed_init;
   // TODO(Ryan): If not required, don't bother setting up? 
   init.Pin = GPIO_PIN_13;
   init.Mode = GPIO_MODE_AF_PP;
@@ -71,7 +118,9 @@ spi_init(void)
   init.Pull = GPIO_NOPULL;
   init.Speed = GPIO_SPEED_FREQ_HIGH;
   global_spi_state.miso_dio = dio_add_input(s8_lit("spi4_miso"), &init, GPIOE, 0);
+  */
 
+  init = zeroed_init;
   init.Pin = GPIO_PIN_14;
   init.Mode = GPIO_MODE_AF_PP;
   init.Alternate = GPIO_AF5_SPI4;
@@ -79,23 +128,8 @@ spi_init(void)
   init.Speed = GPIO_SPEED_FREQ_HIGH;
   global_spi_state.mosi_dio = dio_add_output(s8_lit("spi4_mosi"), &init, GPIOE, 0);
 
-  init.Pin = GPIO_PIN_10;
-  init.Mode = GPIO_MODE_OUTPUT_PP;
-  init.Pull = GPIO_NOPULL;
-  init.Speed = GPIO_SPEED_FREQ_HIGH;
-  u32 backlight_index = dio_add_output(s8_lit("backlight"), &init, GPIOE, 0);
 
-  init.Pin = GPIO_PIN_7;
-  init.Mode = GPIO_MODE_OUTPUT_PP;
-  init.Pull = GPIO_NOPULL;
-  init.Speed = GPIO_SPEED_FREQ_HIGH;
-  u32 data_control_index = dio_add_output(s8_lit("data_control"), &init, GPIOE, 0);
 
-  init.Pin = GPIO_PIN_8;
-  init.Mode = GPIO_MODE_OUTPUT_PP;
-  init.Pull = GPIO_NOPULL;
-  init.Speed = GPIO_SPEED_FREQ_HIGH;
-  u32 reset_index = dio_add_output(s8_lit("reset"), &init, GPIOE, 0);
 
   __HAL_RCC_SPI4_CLK_ENABLE();
   // TODO(Ryan): Necessary?
@@ -126,7 +160,6 @@ spi_init(void)
   {
     result = STATUS_SUCCEEDED;
   }
-  // dio_output_set(global_spi_state.nss_dio, 1);
 
   // There is usually at least one more signal, providing framing, but as SPI is more a defacto than a formal standard, different devices treat this signal differently. 
 
@@ -134,8 +167,37 @@ spi_init(void)
   // Throw a ~5k pull up on it and it'll go
   // If a pullup is switched on for this pin in GPIOx_PUPDR, the pin will be pulled up, but this may take time, depending on the capacitive loading on the pin, given the pullup is relatively weak (nominally 40kΩ). 
 
+  dio_output_set(global_spi_state.dc_dio, 0);
+  
+  u8 on_horizontal_extended = 0x21; 
+  spi_tx(&global_spi_state.handle, &on_horizontal_extended, 1, 1000);
+
+  // setting higher voltage gives greater contrast
+  u8 voltage = 0xF0; 
+  spi_tx(&global_spi_state.handle, &voltage, 1, 1000);
+
+  u8 basic = 0x20; 
+  spi_tx(&global_spi_state.handle, &basic, 1, 1000);
+
+  u8 normal = 0x0C; 
+  spi_tx(&global_spi_state.handle, &normal, 1, 1000);
+
+  
+  dio_output_set(global_spi_state.dc_dio, 1);
+  u8 val = 0x1F;
+  spi_tx(&global_spi_state.handle, &val, 1, 1000);
+  val = 0x05;
+  spi_tx(&global_spi_state.handle, &val, 1, 1000);
+  val = 0x07;
+  spi_tx(&global_spi_state.handle, &val, 1, 1000);
+  val = 0x00;
+  spi_tx(&global_spi_state.handle, &val, 1, 1000);
+  spi_tx(&global_spi_state.handle, &val, 1, 1000);
+
+
   return result;
 }
+
 
 INTERNAL void
 spi_test(void)
