@@ -2,12 +2,13 @@
 
 // https://www.youtube.com/watch?v=TUD4qnQjSzs&list=PLtVUYRe-Z-mcjXXFBte61L8SjyI377VNq&index=28&t=713s
 
-// reflective layers cost more
+// reflective layers cost more, but can be lower power as less backlight required (however only effective in well-lit areas)
 
 // dot matrix monochrome, e.g. traffic signals
 
-// seems that would use 16 pins character-LCD as is IPS?
-// perhaps lower-power and cheaper than SPI?
+// lower-power than TFT
+// less memory due to CGROM/CGRAM
+// cheaper
 
 // Vdd is voltage for logic operation
 // V0 is adjustable voltage for LCD display (can be GND for stronger lighting?)
@@ -23,8 +24,9 @@
 // HAL_Delay() not accurate, e.g. if 0.8 ticks when called, only 0.2ticks elapsed
 
 // NOTE(Ryan): Already enabled if connected via debugger
+// TODO(Ryan): Investigate code space saved specifying addresses instead of including cmsis
 #define INIT_CYCLE_COUNTER() \
-    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk
 
 #define ENABLE_CYCLE_COUNTER() \
     DWT->CTRL |=  DWT_CTRL_CYCCNTENA_Msk
@@ -38,28 +40,13 @@
 #define RESET_CYCLE_COUNTER() \
     DWT->CYCCNT = 0
 
-__STATIC_INLINE void DWT_Delay_us(volatile uint32_t au32_microseconds)
-{
-  uint32_t au32_initial_ticks = DWT->CYCCNT;
-  uint32_t au32_ticks = (HAL_RCC_GetHCLKFreq() / 1000000);
-  au32_microseconds *= au32_ticks;
-  while ((DWT->CYCCNT - au32_initial_ticks) < au32_microseconds-au32_ticks);
-}
-
-__STATIC_INLINE void DWT_Delay_us(volatile uint32_t au32_microseconds)
+INTERNAL void 
+delay_us(u32 us)
 {
   u32 start_cycles = GET_CYCLE_COUNTER();
-  u32 us_tick_freq = (HAL_RCC_GetHCLKFreq() / 1000000);
-  u32 us_ticks *= us_tick_freq;
-  while ((DWT->CYCCNT - start_cycles) < us_ticks - us_tick_freq);
-}
-
-__STATIC_INLINE void DWT_Delay_ms(volatile uint32_t au32_milliseconds)
-{
-  uint32_t au32_initial_ticks = DWT->CYCCNT;
-  uint32_t au32_ticks = (HAL_RCC_GetHCLKFreq() / 1000);
-  au32_milliseconds *= au32_ticks;
-  while ((DWT->CYCCNT - au32_initial_ticks) < au32_milliseconds);
+  u32 cycles_per_us = (HAL_RCC_GetHCLKFreq() / 1000000);
+  u32 cycles_to_delay = us * cycle_per_us;
+  while ((GET_CYCLE_COUNTER() - start_cycles) < cycles_to_delay);
 }
 
 
@@ -68,13 +55,52 @@ __STATIC_INLINE void DWT_Delay_ms(volatile uint32_t au32_milliseconds)
 // TODO(Ryan): Understand Systick/RCC more in depth (weeW systick microsecond; matej;)
 // TODO(Ryan): Verify clock signal by measuring GPIO pin toggling frequency
 
-GPIOE
+INTERNAL void
+lcd_write(u8 data)
+{
+  dio_output_set(rs_dio, 1);
+  dio_output_set(rw_dio, 0);
+  delay_us(10);
+  dio_output_set(e_dio, 1);
+  delay_us(5);
+  // IMPORTANT(Ryan): This is where pin ordering helps  
+  GPIOE->ODR &= 0xFF00;
+  GPIOE->ODR |= data;
+  delay_us(10);
+  dio_output_set(e_dio, 0);
+}
+
+INTERNAL void
+lcd_cmd(u8 data)
+{
+  dio_output_set(rs_dio, 0);
+  dio_output_set(rw_dio, 0);
+  delay_us(10);
+  dio_output_set(e_dio, 1);
+  delay_us(5);
+  GPIOE->ODR &= 0xFF00;
+  GPIOE->ODR |= data;
+  delay_us(10);
+  dio_output_set(e_dio, 0);
+}
+
 INTERNAL void
 init_lcd1602(void)
 {
   // init pins  
-
-  // data register
-  dio_set_output(rs_dio, 1);
-  dio_set_output(rw_dio, 0);
+  // ...
+  
+  HAL_Delay(20);
+  // 8bit, 2lines, 5x11 font size
+  lcd_cmd(0x3C);
+  HAL_Delay(5);
+  // on
+  lcd_cmd(0x0C); 
+  HAL_Delay(5);
+  // clear display
+  lcd_cmd(0x01); 
+  HAL_Delay(5);
+  // put cursor at start
+  lcd_cmd(0x02); 
+  HAL_Delay(5);
 }
