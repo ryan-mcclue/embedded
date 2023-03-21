@@ -50,6 +50,7 @@
 #include "stm32f429zitx-mem.c"
 #include "blinky.c"
 #include "spi.c"
+#include "lcd.c"
 
 // classic RC circuit exponential discharge, 95% fall time 
 
@@ -264,7 +265,16 @@ int main(void)
     __bp();
   }
   */
+  INIT_CYCLE_COUNTER();
+  ENABLE_CYCLE_COUNTER();
 
+  LCDInit lcd_init = ZERO_STRUCT;
+  lcd_init.gpio_base = GPIOD;
+  lcd_init.data_pin_start = 0;
+  lcd_init.rs_pin = GPIO_PIN_11;
+  lcd_init.rw_pin = GPIO_PIN_12;
+  lcd_init.e_pin = GPIO_PIN_13;
+  LCDInfo lcd_info = init_lcd1602(&lcd_init);
 
   // TODO(Ryan): Debouncing https://youtu.be/yTsjfXsW25A?t=242
   // Adding capacitor smooths signal, so no bouncing. However, delays signal peak time

@@ -439,13 +439,14 @@ struct StateInfo
   u32 anim_t;
 
   // input received, what state will jump to
-  STATE button_pressed;
+  // IMPORTANT: inputs in embedded will typically be interrupts that set
+  // a variable
+  STATE button_pressed_input;
 
   // actions
   function_pointer(prev_state, ...) action; // this is where can have large switch statement we expect in state machines?
 };
 
-// TODO(Ryan): perhaps M
 
 StateInfo state_table[] = 
 {
@@ -454,6 +455,7 @@ StateInfo state_table[] =
 
 main
 {
+  // state_table[current_state][input] ??
   state->action_fp(NULL, ...);
 }
 
@@ -477,9 +479,7 @@ enum states start_looping(enum states state, enum events event) {
 }
 
 enum states print_hello(enum states state, enum events event) {
-	assert(state == LOOP && event == PRINT_HELLO);
-	printf("Hello World!\n");
-	return LOOP;
+	assert(state == LOOP && event == PRINT_HELLO); printf("Hello World!\n"); return LOOP;
 }
 
 enum states stop_looping(enum states state, enum events event) {
@@ -508,3 +508,26 @@ int main(void) {
 	return 0;
 }
 ```
+
+Before entering an interrupt, context is saved
+
+RTOS:
+  * scheduler (priority, time slices, preemptive)
+  * resource sharing
+
+Embedded:
+  * state machines
+  * things that are continously monitored (circular buffers)
+
+Many embedded compilers lag behind modern desktop compiler features
+
+Watchdog are timer features?
+They are NMI
+Time between petting the dog varies
+Most debuggers stop the timer on a breakpoint (seems that debugger setup can even disable timers, DMA, etc.)
+(will have to stop watchdog during a firmware update)
+Place in idle loop
+
+TODO: Charlieplexing
+
+For most engineering, the date between shipping and actually appearing on shelves could be 4 months.
