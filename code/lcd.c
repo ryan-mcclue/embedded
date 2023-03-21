@@ -7,7 +7,7 @@
 // dot matrix monochrome, e.g. traffic signals
 
 // lower-power than TFT
-// less memory due to CGROM/CGRAM
+// less memory due to CGROM/CGRAM (DDRAM for LCD is where displayed characters go)
 // cheaper
 
 // Vdd is voltage for logic operation
@@ -37,9 +37,9 @@
 INTERNAL void 
 delay_us(u32 us)
 {
-  u32 start_cycles = GET_CYCLE_COUNTER();
-  u32 cycles_per_us = (HAL_RCC_GetHCLKFreq() / 1000000);
-  u32 cycles_to_delay = us * cycles_per_us;
+  u64 start_cycles = GET_CYCLE_COUNTER();
+  u64 cycles_per_us = (SystemCoreClock / 1000000);
+  u64 cycles_to_delay = us * cycles_per_us;
   while ((GET_CYCLE_COUNTER() - start_cycles) < cycles_to_delay);
 }
 
@@ -97,7 +97,23 @@ lcd_write(LCDInfo *info, LCD_WRITE_TYPE type, u8 data)
   dio_output_set(info->e_dio, 0);
 }
 
+INTERNAL void
+lcd_s8(LCDInfo *info, u32 line_num, u32 col_num, String8 str)
+{
+  u32 pos = 0; 
+  if (line_num == 1)
+  {
+    pos = 0x40;
+  }
 
+  lcd_write(info, LCD_WRITE_TYPE_CMD, 0x80 + pos + col_num);
+
+  for (u32 i = 0; i < str.size; i += 1)
+  {
+    lcd_write(info, LCD_WRITE_TYPE_DATA, str.str[i]);
+    delay_us(100);
+  }
+}
 
 INTERNAL LCDInfo
 init_lcd1602(LCDInit *init)
@@ -129,7 +145,7 @@ init_lcd1602(LCDInit *init)
   result.e_dio = dio_add_output(s8_lit("lcd_e"), &gpio_init, init->gpio_base, 0);
 
   result.gpio_base = init->gpio_base;
-  
+
   HAL_Delay(20);
   // 8bit, 2lines, 5x11 font size
   lcd_write(&result, LCD_WRITE_TYPE_CMD, 0x3C);
@@ -144,5 +160,34 @@ init_lcd1602(LCDInit *init)
   lcd_write(&result, LCD_WRITE_TYPE_CMD, 0x02);
   HAL_Delay(5);
 
+  //lcd_write(&result, LCD_WRITE_TYPE_DATA, 'a');
+  //delay_us(100);
+  //lcd_write(&result, LCD_WRITE_TYPE_DATA, 'y');
+
+  lcd_s8(&result, 0, 0, s8_lit("Ryanx"));
+  delay_us(100);
+  lcd_s8(&result, 1, 0, s8_lit("McClue"));
+
   return result;
 }
+
+  // jlink commanderscript doesn't reset; have to hit reset button (reset strategy 3?)
+
+/*
+   Powering the display and Arduino from different power supplies and getting ground loops that crater everything.
+   IMPORTANT: EVERYTHING MUST SHARE COMMON GROUND, OTHERWISE GET GROUND LOOPS AND WILL SEE NOISY SIGNALS
+   Need to use optoisolator?? Each side of isolator has to be separate power supply?
+
+   When signal frequencies get very high, even a small impedance (resistance, capacitance, or inductance) added to a circuit can affect the signal
+   the probe you use may have to help compensate for it.
+
+   Oscilloscope probes add resistive, capacitive, and inductive loads to your circuit. 
+   oscilloscope has better handling than logic probe?
+
+   When signal frequencies get high, 
+   Adding a logic analyser probe increases capacitance and inductance of wire?
+   So, it causes ringing and reflections? Add a 100Ohm resistor to probe to negate this?
+   The goal is to damp any ringing/reflections caused by the probe.
+
+   Decoupling capacitor for noise on breadboard power rails?
+ */

@@ -100,7 +100,7 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
 
   # NOTE(Ryan): Ignored warnings
   target_compiler_flags+=( "-Wno-unknown-pragmas" "-Wno-missing-field-initializers" "-Wno-cast-align" "-Wno-comment" )
-  target_compiler_flags+=( "-Wno-missing-declarations" "-Wno-discarded-qualifiers" )
+  target_compiler_flags+=( "-Wno-missing-declarations" "-Wno-discarded-qualifiers" "-Wno-conversion" )
 
   target_compiler_flags+=( "-ffunction-sections" "-fdata-sections" )
 

@@ -125,6 +125,9 @@ stat_avg_us(Stat* stat)
   }
 }
 
+
+GLOBAL LCDInfo global_lcd_info;
+
 // IMPORTANT(Ryan): 2 reasons for interrupts
 // 1. Things that must be handled immediately
 // 2. Computationally efficient
@@ -137,7 +140,7 @@ EXTI15_10_IRQHandler(void)
 {
   if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_13))
   {
-    spi_init();
+    lcd_s8(&global_lcd_info, 1, 8, s8_lit("MB"));
 
     // IMPORTANT(Ryan): Interrupt flags must be manually cleared to avoid retriggering
     __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_13);
@@ -266,6 +269,7 @@ int main(void)
   }
   */
   INIT_CYCLE_COUNTER();
+  RESET_CYCLE_COUNTER();
   ENABLE_CYCLE_COUNTER();
 
   LCDInit lcd_init = ZERO_STRUCT;
@@ -274,7 +278,7 @@ int main(void)
   lcd_init.rs_pin = GPIO_PIN_11;
   lcd_init.rw_pin = GPIO_PIN_12;
   lcd_init.e_pin = GPIO_PIN_13;
-  LCDInfo lcd_info = init_lcd1602(&lcd_init);
+  global_lcd_info = init_lcd1602(&lcd_init);
 
   // TODO(Ryan): Debouncing https://youtu.be/yTsjfXsW25A?t=242
   // Adding capacitor smooths signal, so no bouncing. However, delays signal peak time
