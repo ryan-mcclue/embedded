@@ -1,32 +1,26 @@
 
 
-Breakpoint=/home/ryan/prog/personal/embedded/code/stm32f429zitx-console.c:103:3, State=BP_STATE_DISABLED
-Breakpoint=/home/ryan/prog/personal/embedded/code/stm32f429zitx-main.c:140:5, State=BP_STATE_DISABLED
-Breakpoint=/home/ryan/prog/personal/embedded/code/stm32f429zitx-main.c:187:39, State=BP_STATE_DISABLED
-Breakpoint=/home/ryan/prog/personal/embedded/code/stm32f429zitx-main.c:190:44, State=BP_STATE_DISABLED
-Breakpoint=/home/ryan/prog/personal/embedded/code/stm32f429zitx-main.c:277, State=BP_STATE_ON
-OpenDocument="stm32f4xx_hal.c", FilePath="/home/ryan/prog/personal/embedded/stm32f429zitx-bsp/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c", Line=370
+
+Breakpoint=/home/ryan/prog/personal/embedded/code/stm32f429zitx-main.c:143, State=BP_STATE_ON
+OpenDocument="stm32f429zitx-main.c", FilePath="/home/ryan/prog/personal/embedded/code/stm32f429zitx-main.c", Line=132
 OpenDocument="lcd.c", FilePath="/home/ryan/prog/personal/embedded/code/lcd.c", Line=117
 OpenDocument="spi.c", FilePath="/home/ryan/prog/personal/embedded/code/spi.c", Line=31
 OpenDocument="ozone.jdebug", FilePath="/home/ryan/prog/personal/embedded/misc/ozone.jdebug", Line=0
-OpenDocument="stm32f429zitx-main.c", FilePath="/home/ryan/prog/personal/embedded/code/stm32f429zitx-main.c", Line=261
+OpenDocument="stm32f4xx_hal.c", FilePath="/home/ryan/prog/personal/embedded/stm32f429zitx-bsp/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c", Line=370
 OpenDocument="stm32f429zitx-timer.c", FilePath="/home/ryan/prog/personal/embedded/code/stm32f429zitx-timer.c", Line=100
 OpenToolbar="Debug", Floating=0, x=0, y=0
-OpenWindow="Call Stack", DockArea=RIGHT, x=0, y=2, w=1431, h=541, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
-OpenWindow="Registers 1", DockArea=LEFT, x=0, y=0, w=1188, h=1036, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, FilteredItems=[], RefreshRate=1
-OpenWindow="Break & Tracepoints", DockArea=BOTTOM, x=0, y=0, w=3696, h=301, TabPos=0, TopOfStack=1, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, VectorCatchIndexMask=254
-OpenWindow="Memory 1", DockArea=BOTTOM, x=0, y=0, w=3696, h=301, TabPos=1, TopOfStack=0, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, EditorAddress=0x0
-OpenWindow="Local Data", DockArea=RIGHT, x=0, y=0, w=1431, h=238, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
-OpenWindow="Watched Data 1", DockArea=RIGHT, x=0, y=1, w=1431, h=245, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Registers 1", DockArea=RIGHT, x=0, y=0, w=361, h=949, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, FilteredItems=[], RefreshRate=1
+OpenWindow="Break & Tracepoints", DockArea=LEFT, x=0, y=0, w=300, h=243, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, VectorCatchIndexMask=254
+OpenWindow="Memory 1", DockArea=BOTTOM, x=1, y=0, w=1129, h=141, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, EditorAddress=0x0
+OpenWindow="Functions", DockArea=LEFT, x=0, y=1, w=300, h=700, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Console", DockArea=BOTTOM, x=0, y=0, w=1147, h=141, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
 SmartViewPlugin="", Page="", Toolbar="Hidden", Window="SmartView 1"
-TableHeader="Local Data", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Value";"Location";"Size";"Type";"Scope"], ColWidths=[252;343;140;100;322;490]
-TableHeader="Call Stack", SortCol="Function", SortOrder="ASCENDING", VisibleCols=["Function";"Stack Frame";"Source";"PC";"Return Address";"Stack Used"], ColWidths=[378;210;392;140;322;135]
+TableHeader="Functions", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Address";"Size";"#Insts";"Source"], ColWidths=[2114;140;100;100;420]
 TableHeader="Power Sampling", SortCol="None", SortOrder="ASCENDING", VisibleCols=["Index";"Time";"Ch 0"], ColWidths=[100;100;100]
-TableHeader="Registers 1", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Value";"Description"], ColWidths=[247;196;730]
-TableHeader="Watched Data 1", SortCol="Expression", SortOrder="ASCENDING", VisibleCols=["Expression";"Value";"Location";"Refresh"], ColWidths=[361;652;103;315]
+TableHeader="Registers 1", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Value";"Description"], ColWidths=[247;196;504]
 TableHeader="RegisterSelectionDialog", SortCol="None", SortOrder="ASCENDING", VisibleCols=[], ColWidths=[]
-TableHeader="Vector Catches", SortCol="", SortOrder="ASCENDING", VisibleCols=["";"Vector Catch";"Description"], ColWidths=[50;300;3331]
-TableHeader="Break & Tracepoints", SortCol="", SortOrder="ASCENDING", VisibleCols=["";"Type";"Location";"Extras"], ColWidths=[100;100;116;3380]
+TableHeader="Vector Catches", SortCol="", SortOrder="ASCENDING", VisibleCols=["";"Vector Catch";"Description"], ColWidths=[50;300;1917]
+TableHeader="Break & Tracepoints", SortCol="", SortOrder="ASCENDING", VisibleCols=["";"Type";"Location";"Extras"], ColWidths=[100;100;116;1966]
 TableHeader="TargetExceptionDialog", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Value";"Address";"Description"], ColWidths=[200;100;100;359]
 WatchedExpression="global_console.uart_info", Window=Watched Data 1
 WatchedExpression="global_console.uart_info.stats", Window=Watched Data 1

@@ -531,3 +531,46 @@ Place in idle loop
 TODO: Charlieplexing
 
 For most engineering, the date between shipping and actually appearing on shelves could be 4 months.
+
+## Week 6
+As MEMS are small, sensitive to temperature (in fact all sensors can be thought of temperature sensors to an extent)
+(so, calibration of sensors is possible, however expensive and what to avoid)
+IMU/inertial sensors 9DOF: 
+  * accelerometer
+    Saying measure acceleration technically true, but not helpful?
+    90% of the time, accelerometers tell us which way is down
+    tell you z (what side facing)
+    However, if moving 10%, measure acceleration in particular axis
+  * gyro 
+    measure force needed to turn in another axis (how fast something is turning?)
+    typically for gesture detection (are rotating)
+  * magnemoter
+    tell you x and y on Earth by saying where Earth's magentic field is pointing, i.e. offset from magnetic poles
+    (where pointing)
+Most likely digital (nice as no analog signals to carry noise)
+
+IMPORTANT: Recognise situations where MEMS sensors can be trusted, e.g.
+barometer to measure altitude only good if moving, as air pressure can change from weather
+
+x, y, z Euler angles around axis are roll (literal rolling), pitch (up hill) and yaw (turning)
+
+accelerometer + gyro + kalmann filter gives Euler angles so can tell orientation
+
+Now to get position:
+  * accelerometer: double integration
+  * gyro: single integration
+However, these sensors to imprecise, e.g. vibrations
+These two calculations of position wildly different
+Kalman algorithm takes prior knowledge of state (i.e. are way moving, stationary so as to know which sensor more reliable) and these measurements 
+So, high quality sensors required
+Kalman different implementations for different vehicles, e.g. car, boat, spaceship
+
+Quaternion if four-space math. 4th dimension is not time
+Used to remove discontinuities, e.g. 359-0 boundary
+
+Yaw tells about relative turns, but doesn't give what direction facing in world
+
+Heading direction vehicle pointing in reference to magnetic north
+Bearing is direction travelling (e.g. drifting a corner, heading and bearing are different)
+
+Seems like cryptography, use well established boffin libraries
