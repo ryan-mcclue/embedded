@@ -761,7 +761,7 @@ void HAL_DAC_IRQHandler(DAC_HandleTypeDef *hdac)
   * @param  hdac pointer to a DAC_HandleTypeDef structure that contains
   *         the configuration information for the specified DAC.
   * @param  Channel The selected DAC channel.
-  *          This parameter can be one of the following values:
+ *          This parameter can be one of the following values:
   *            @arg DAC_CHANNEL_1: DAC Channel1 selected
   *            @arg DAC_CHANNEL_2: DAC Channel2 selected
   * @param  Alignment Specifies the data alignment.
