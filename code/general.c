@@ -152,11 +152,198 @@ get_reset_source(uint8_t clear_flags)
 }
 
 INTERNAL void 
-TM_GENERAL_ForceHardFaultError(void) {
-	/* Create hard-fault-function typedef */
+force_hard_fault(void)
+{
 	typedef void (*hff)(void);
 	hff hf_func = 0;
-	
-	/* Call function at zero location in memory = HARDFAULT */
 	hf_func();
+}
+
+typedef u32 BOR_LEVEL;
+enum 
+{
+  BOR_LEVEL_OFF = OB_BOR_OFF, 
+	BOR_LEVEL_1 = OB_BOR_LEVEL1,
+	BOR_LEVEL_2 = OB_BOR_LEVEL2,
+	BOR_LEVEL_3 = OB_BOR_LEVEL3
+};
+
+typedef enum {
+	TM_BOR_Result_Ok = 0x00, /*!< Everything OK */
+	TM_BOR_Result_Error      /*!< An error has occurred */
+} TM_BOR_Result_t;
+
+// flash option bytes area of flash used to control certain peripherals
+// TODO: command line programming of just flash option bytes 
+
+// fast SPI tft: https://www.youtube.com/watch?v=oWx1-WmTwag 
+// https://github.com/maudeve-it/ST7735S-STM32
+
+// fast I2C eeprom: https://www.youtube.com/watch?v=Rd5CeMbla5g  
+
+// PVD for detecting higher voltages than BOR (so perhaps write to flash in PVD?)
+// need a certain capacitance and inductance of power supply to allow for EEPROM writing?
+// https://www.youtube.com/watch?v=AHBGlCDGqhE
+
+INTERNAL BOR_LEVEL 
+get_brownout_level(void)
+{
+	FLASH_OBProgramInitTypeDef flash_ob_handle = ZERO_STRUCT;
+	
+	HAL_FLASHEx_OBGetConfig(&flash_ob_handle);
+
+	return (BOR_LEVEL)flash_ob_handle.BORLevel;
+}
+
+INTERNAL TM_BOR_Result_t 
+TM_BOR_Set(BOR_LEVEL bor_level) {
+	HAL_StatusTypeDef status;
+
+  // flash option bytes
+	FLASH_OBProgramInitTypeDef FLASH_Handle;
+	
+	/* Check current BOR value */
+	if (TM_BOR_Get() != bor_level) {
+		/* Set new value */
+
+		/* Select the desired V(BOR) Level */
+		FLASH_Handle.BORLevel = (uint32_t)BORValue;
+		FLASH_Handle.OptionType = OPTIONBYTE_BOR;
+
+		/* Unlocks the option bytes block access */
+		HAL_FLASH_OB_Unlock();
+		
+		/* Set value */
+		HAL_FLASHEx_OBProgram(&FLASH_Handle); 
+
+		/* Launch the option byte loading */
+		status = HAL_FLASH_OB_Launch();
+		
+		/* Lock access to registers */
+		HAL_FLASH_OB_Lock();
+		
+		/* Check success */
+		if (status != HAL_OK) {
+			/* Return error */
+			return TM_BOR_Result_Error;
+		}
+	}
+	
+	/* Return OK */
+	return TM_BOR_Result_Ok;
+}
+
+/* NVIC preemption priority */
+#ifndef PVD_NVIC_PRIORITY
+#define PVD_NVIC_PRIORITY      0x04
+#endif
+
+/* NVIC subpriority */
+#ifndef PVD_NVIC_SUBPRIORITY
+#define PVD_NVIC_SUBPRIORITY   0x00
+#endif
+
+typedef enum {
+	TM_PVD_Trigger_Rising = PWR_PVD_MODE_IT_RISING,                /*!< PVD will trigger interrupt when voltage rises above treshold */
+	TM_PVD_Trigger_Falling = PWR_PVD_MODE_IT_FALLING,              /*!< PVD will trigger interrupt when voltage falls below treshold */
+	TM_PVD_Trigger_Rising_Falling = PWR_PVD_MODE_IT_RISING_FALLING /*!< PVD will trigger interrupt when voltage rises or falls above/below treshold */
+} TM_PVD_Trigger_t;
+
+/**
+ * @brief  PVD levels for interrupt triggering
+ * @note   Check datasheets for proper values for voltages
+ */
+typedef enum {
+	TM_PVD_Level_0 = PWR_PVDLEVEL_0, /*!< PVD level 0 is used as treshold value */
+	TM_PVD_Level_1 = PWR_PVDLEVEL_1, /*!< PVD level 1 is used as treshold value */
+	TM_PVD_Level_2 = PWR_PVDLEVEL_2, /*!< PVD level 2 is used as treshold value */
+	TM_PVD_Level_3 = PWR_PVDLEVEL_3, /*!< PVD level 3 is used as treshold value */
+	TM_PVD_Level_4 = PWR_PVDLEVEL_4, /*!< PVD level 4 is used as treshold value */
+	TM_PVD_Level_5 = PWR_PVDLEVEL_5, /*!< PVD level 5 is used as treshold value */
+	TM_PVD_Level_6 = PWR_PVDLEVEL_6, /*!< PVD level 6 is used as treshold value */
+	TM_PVD_Level_7 = PWR_PVDLEVEL_7  /*!< PVD level 7 is used as treshold value */
+} TM_PVD_Level_t;
+
+
+void TM_PVD_Enable(TM_PVD_Level_t Level, TM_PVD_Trigger_t Trigger) {
+	PWR_PVDTypeDef ConfigPVD;
+	
+	/* Enable PWR clock */
+	__HAL_RCC_PWR_CLK_ENABLE();
+	
+	/* Set interrupt to NVIC */
+	HAL_NVIC_SetPriority(PVD_IRQn, PVD_NVIC_PRIORITY, PVD_NVIC_SUBPRIORITY);
+	
+	/* Enable interrupt */
+	HAL_NVIC_EnableIRQ(PVD_IRQn);
+	
+	/* Set level and mode */
+	ConfigPVD.PVDLevel = (uint32_t)Level;
+	ConfigPVD.Mode = Trigger;
+	
+	/* Config and enable PVD */
+	HAL_PWR_ConfigPVD(&ConfigPVD);
+	
+	/* Enable PVD */
+	HAL_PWR_EnablePVD();
+}
+
+void TM_PVD_Disable(void) {
+	/* Disable PVD */
+	HAL_PWR_DisablePVD();
+	
+	/* Disable EXTI interrupt for PVD */
+	__HAL_PWR_PVD_EXTI_DISABLE_IT();
+
+	/* Disable NVIC */
+	NVIC_DisableIRQ(PVD_IRQn);
+}
+
+
+void PVD_IRQHandler(void) {
+	/* Call user function if needed */
+	if (__HAL_PWR_PVD_EXTI_GET_FLAG() != RESET) {
+#if defined(PWR_CSR_PVDO)	
+		/* Call user function with status */
+		TM_PVD_Handler((PWR->CSR & PWR_CSR_PVDO) ? 1 : 0);
+#endif
+#if defined(PWR_CSR1_PVDO)
+		/* Call user function with status */
+		TM_PVD_Handler((PWR->CSR1 & PWR_CSR1_PVDO) ? 1 : 0);
+#endif
+		/* Clear PWR EXTI pending bit */
+		__HAL_PWR_PVD_EXTI_CLEAR_FLAG();
+	}
+}
+
+// IMPORTANT(Ryan): STM32 also has HAL and LL 'driver description' pdfs
+
+void 
+TM_PVD_Handler(uint8_t status) {
+	/* Check status */
+	if (status) {
+		/* Power is below trigger voltage */
+		TM_DISCO_LedOn(LED_ALL);
+	} else {
+		/* Power is above trigger voltage */
+		TM_DISCO_LedOff(LED_ALL);
+	}
+
+  eeprom_write(addr, data, sizeof(data));
+}
+
+u8 counter;
+
+void 
+main(void)
+{
+  // IMPORTANT(Ryan): When looking at EEPROM characteristics: 
+  //   * page write time size
+  //   * lowest operating voltage
+  char text[EEPROM_PAGE_LEN];
+  eeprom_read(addr, text);
+
+  // set at highest level to detect power failer earliest
+	/* Init Power Voltage Detector with rising and falling interrupt */
+	TM_PVD_Enable(TM_PVD_Level_3, TM_PVD_Trigger_Rising_Falling);
 }

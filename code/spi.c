@@ -223,4 +223,51 @@ spi_test(void)
 
 }
 
+void
+spi_timings(void)
+{
+  // polling/dma/interrupt mode
+
+  // e.g:
+  // 20 clear screens: 5000ms
+  // 30k vertical lines:
+  // 5k characters: 
+
+}
+
+void spi_write()
+{
+  // ensure we don't start a new DMA transmission before last one has finished
+  GLOBAL global_display_busy_dma = 0;
+
+  // TODO(Ryan):
+  // PWM pin for dimming backlight?
+  // turn backlight off when no new data being written to it?
+
+  // however, setting and starting many small DMA transactions takes time (so much so, could be slower than polling)
+  // so, throughput important for DMA
+  // IMPORTANT(Ryan): So, for short data, polling mode is actually faster than DMA (i.e. only faster if CPU can do other work)
+  // we see this by adding a trigger GPIO pin for view on logic analyser an many time intervals between transactions
+  // so, buffer SPI data (we don't need a full 1:1 mapping of screen to buffer size to get benefits). 
+  // However, will have to implement double buffering so the MCU does not overwrite buffer as DMA is sending it to SPI
+  // IMPORTANT(Ryan): If just measuring one thing, e.g. clear screen, measure time in logic analyser?
+  // also relevent to timing is clock speed of MCU and SPI speed
+  while (global_display_busy_dma) {}
+  global_display_busy_dma = 1;
+  if (data_size < DMA_CUTOFF)
+  {
+    SPI_Transmit();
+  }
+  else
+  {
+    SPI_Transmit_DMA();
+  }
+}
+
+void
+spi_tx_callback_int(void)
+{
+  global_display_busy_dma = 0;
+}
+
 // https://youtu.be/H_5QQQnP0zg?list=PLtVUYRe-Z-mcjXXFBte61L8SjyI377VNq&t=1160
