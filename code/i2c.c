@@ -254,7 +254,39 @@ i2c_interrupt()
 // look at measurement time, so know how long to wait before actually reading result?
 
 
+// the breakout boards like EEPROM used in dev as has pull-up resistor on it.
+// furthermore, will probably have configurable address pins tied to ground
+// however, when in production probably use EEPROM in DAP package
 
+// with polling, want to know how long takes to reply to put in timeout 
 
+// with DMA, want to know if EEPROM has finished writing before issuing again
+void
+i2c_device_test(void)
+{
+  u32 trial_count = 20;
+  u32 trial_timeout_ms = 10;
+  HAL_I2C_IsDeviceReady();
 
+  u32 comm_timeout_ms = 10;
+  HAL_I2C_Mem_Read();
 
+  u64 cycles_start = CYCLE_COUNT_READ();
+  HAL_I2C_Mem_Write();
+  u64 cycles_end = CYCLE_COUNT_READ();
+
+  // TODO(Ryan): Use __NOP() as a breakpoint
+  
+  // TODO(Ryan): Whenever working with I2C device, test the trial and timeout count
+  // Often the trial count related to I2C speed, e.g. 10x faster than 10x trial count
+
+  // EEPROM will have page boundary overriding
+
+  // flash has much large page size (so, use if need larger transfers) 
+}
+
+void
+eeprom_write(void)
+{
+  if (IsDeviceReady()) Write()/Read();
+}
