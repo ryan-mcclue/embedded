@@ -347,3 +347,96 @@ main(void)
 	/* Init Power Voltage Detector with rising and falling interrupt */
 	TM_PVD_Enable(TM_PVD_Level_3, TM_PVD_Trigger_Rising_Falling);
 }
+
+#define MCU_GET_SIGNATURE()     (DBGMCU->IDCODE & 0x00000FFF)
+#define MCU_GET_REVISION()      ((DBGMCU->IDCODE >> 16) & 0x0000FFFF)
+
+#define MCU_FLASH_SIZE_ADDRESS (0x1FFF7A22)
+#define FLASH_SIZE_KB     (*(volatile u16 *)(MCU_FLASH_SIZE_ADDRESS))
+
+#define MCU_ID_ADDRESS (0x1FFF7A10)
+#define MCU_ID_U8      ((*(volatile u8 *)(MCU_ID_ADDRESS)
+#define MCU_ID_U16     ((*(volatile u16 *)(MCU_ID_ADDRESS)
+#define MCU_ID_U32     ((*(volatile u32 *)(MCU_ID_ADDRESS)
+
+typedef struct {
+	float Load;      /*!< CPU load percentage */
+	uint8_t Updated; /*!< Set to 1 when new CPU load is calculated */
+	uint32_t WCNT;   /*!< Number of working cycles in one period. Meant for private use */
+	uint32_t SCNT;   /*!< Number of sleeping cycles in one period. Meant for private use */
+} TM_CPULOAD_t;
+
+
+uint8_t TM_CPULOAD_GoToSleepMode(TM_CPULOAD_t* CPU_Load) {
+	uint32_t t;
+	static uint32_t l = 0;
+	static uint32_t WorkingTime = 0;
+	static uint32_t SleepingTime = 0;
+	uint8_t irq_status;
+	
+	/* Add to working time */
+	WorkingTime += DWT->CYCCNT - l;
+	
+	/* Save count cycle time */
+	t = DWT->CYCCNT;
+	
+	/* Get interrupt status */
+	irq_status = __get_PRIMASK();
+	
+	/* Disable interrupts */
+	__disable_irq();
+	
+	/* Go to sleep mode */
+	/* Wait for wake up interrupt, systick can do it too */
+	__WFI();
+	
+	/* Increase number of sleeping time in CPU cycles */
+	SleepingTime += DWT->CYCCNT - t;
+	
+	/* Save current time to get number of working CPU cycles */
+	l = DWT->CYCCNT;
+	
+	/* Enable interrupts, process/execute an interrupt routine which wake up CPU */
+	if (!irq_status) {
+		__enable_irq();
+	}
+	
+	/* Reset flag */
+	CPU_Load->Updated = 0;
+	
+	/* Every 1000ms print CPU load via USART */
+	if ((SleepingTime + WorkingTime) >= HAL_RCC_GetHCLKFreq()) {
+		/* Save values */
+		CPU_Load->SCNT = SleepingTime;
+		CPU_Load->WCNT = WorkingTime;
+		CPU_Load->Load = ((float)WorkingTime / (float)(SleepingTime + WorkingTime) * 100);
+		CPU_Load->Updated = 1;
+		
+		/* Reset time */
+		SleepingTime = 0;
+		WorkingTime = 0;
+	}
+	
+	/* Return updated status */
+	return CPU_Load->Updated;
+}
+
+void main(void)
+{
+/*
+ *What do you want to do with "other interrupts"? If you are planning to sleep until one specific interrupt occurs, then you should simply disable all other interrupts, execute WFI and then re-enable everything when you wake up.
+ */
+  // __ISB
+  // https://chiselapp.com/user/mangoa01/repository/bottom-up/uv/docs/book/micro_bottom_up.pdf
+
+	while (1) {
+		/* Check if CPU LOAD variable is updated */
+		if (CPU_LOAD.Updated) {
+			/* Print to user */
+			printf("W: %u; S: %u; Load: %5.2f\n", CPU_LOAD.WCNT, CPU_LOAD.SCNT, CPU_LOAD.Load);
+		}
+
+		/* Go low power mode, sleep mode until next interrupt (Systick or anything else), measure CPU load */
+		TM_CPULOAD_GoToSleepMode(&CPU_LOAD);
+  }
+}

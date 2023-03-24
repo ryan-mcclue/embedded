@@ -528,7 +528,7 @@ Most debuggers stop the timer on a breakpoint (seems that debugger setup can eve
 (will have to stop watchdog during a firmware update)
 Place in idle loop
 
-TODO: Charlieplexing
+TODO: Charlieplexing outputs e.g. LEDS and matrix inputs e.g. buttons
 
 For most engineering, the date between shipping and actually appearing on shelves could be 4 months.
 
@@ -573,4 +573,16 @@ Yaw tells about relative turns, but doesn't give what direction facing in world
 Heading direction vehicle pointing in reference to magnetic north
 Bearing is direction travelling (e.g. drifting a corner, heading and bearing are different)
 
-Seems like cryptography, use well established boffin libraries
+Seems like cryptography, use well established boffin libraries for IMU
+
+There are data driven applications that don't heavily rely on state machines, e.g.
+EEG, seisometer, flight recorder
+TODO: Use excel formulas
+ADC Throughput to PC:
+  - Does board have enough RAM + Flash (internal and external) + CPU power?
+  - (12bits * 512Hz * 2channels) * 1.2protocol-overhead = 1.8kBps 
+    looking at UART baud rates, we see that it satisfies (no need for USB)
+  We have external flash, so might not always need to be connected to PC
+  - (16MB / (((1.8 * 1.1crc-timestamp-overhead) * 0.5compression)) / 1000)) = 16161 seconds of ADC data
+    if wanting hours, probably better for say a 32Gb sd-card 
+  TODO: seems that whenever storing data from say ADC, use a circular buffer?
