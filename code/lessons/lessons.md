@@ -578,6 +578,8 @@ Seems like cryptography, use well established boffin libraries for IMU
 There are data driven applications that don't heavily rely on state machines, e.g.
 EEG, seisometer, flight recorder
 TODO: Use excel formulas
+Think about throughput when recieving data from peripheral
+Seems we work with buffer sizes relating to seconds of stored data
 ADC Throughput to PC:
   - Does board have enough RAM + Flash (internal and external) + CPU power?
   - (12bits * 512Hz * 2channels) * 1.2protocol-overhead = 1.8kBps 
@@ -586,3 +588,80 @@ ADC Throughput to PC:
   - (16MB / (((1.8 * 1.1crc-timestamp-overhead) * 0.5compression)) / 1000)) = 16161 seconds of ADC data
     if wanting hours, probably better for say a 32Gb sd-card 
   TODO: seems that whenever storing data from say ADC, use a circular buffer?
+
+In general, CPU should not being copying data from place to place.
+Instead, DMA should do this.
+CPU should be used to analyse data
+IMPORTANT: MCU DMA different to desktop DMA
+If many people have encountered a common problem, will typically be an application note, e.g. DMA, DSP, encryption
+DMA arbitration like interrupt priorities
+
+AHB bus specific to cortex-m processors?
+
+TODO: Seems that common to sleep at end of superloop and wait for an interrupt to occur?
+
+IMPORTANT: In addition to HAL files, typically have example source code for particular MCU on github from vendor
+
+
+www.reddit.com/r/embedded/comments/8bx71i/error_handling_in_embedded_c/
+https://www.reddit.com/r/embedded/comments/czffv8/what_is_your_preferred_method_for_handling_errors/
+
+```
+assert for things never should happen
+peripheral errors (common in say bluetooth, etc.) always log and handle with error codes (HOWEVER, FIRST BASIC ERROR HANDLING STRATEGY IS LED BLINKING)
+
+Programmer errors use asserts
+Software errors:
+  * (on dev): capture state of the device (heap, stacks, registers, the works) and assert
+  * (release): error codes
+
+Peripheral errors:
+  error codes
+  log these sorts of errors as well (its critical to know if the hardware is actually bad) (change dev assert from breakpoint to logging)
+  IMPORTANT: logging done whatever is available, e.g. UART console, ethernet, flash etc.
+
+Critical errors:
+  stack overflows, hard faults, asserts, watchdogs, it's best to save off what caused the crash so it can be sent as a bug report upon reboot.
+  For a device installed in people's homes and connected over the internet a last resort is reboot into a "recovery" image. 
+  This image does not do the usual work of the device, instead it reports the fault over the network and then waits for repairs to be sent back over the network.
+
+
+typedef enum
+{
+   // start at 0 as represent number of led blinks
+   ERR_CC1101_TXFIFO_EMPTY = 1,
+   ERR_FLASH_CORRUPTED,
+} ERROR_TYPE;
+
+handle these errors with an error handler that blinks an LED in development
+later, actually handle errors until all removed.
+Handling error:
+  1. Continue onwards
+  2. Go to failsafe, i.e. rollback state to known good condition (retry, reboot, wait)
+  3. Crash and wait for reboot
+
+while (1)
+{
+  throw_bone();
+
+  // still use enums for error codes, just have error handling centralised (as more thread/interrupt safe?)
+  result = state_machine[state]();
+
+  if (result != OK)
+  {
+     error_handler(result);
+  }
+}
+```
+
+RAM usage:
+  .cinit (globals and static with initialisers)
+  .bss (globals and static with on initialisers)
+  .heap (growing down)  
+  ........... NOTE: RTOS tasks will have their own heaps+stacks
+  .stack (growing up)
+Embedded avoid malloc()s as fragmentation becomes more of an issue, when dealing with small allocation sizes
+
+non-volatile RAM more like flash, except speeds like RAM (as literal name is a contradiction)
+keep variables on waking up from deep sleep
+TODO: can mark certain areas of flash as non-volatile?
