@@ -668,7 +668,8 @@ TODO: can mark certain areas of flash as non-volatile?
 
 Going from devboard, e.g. Discovery to PCB:
   * remove ICDI chip 
-    (replace with JTAG pins. could use Tag-Connect, i.e. springy pogo pin connector in plated holes instead of headers)
+    (replace with JTAG pins. could use Tag-Connect, i.e. springy pogo pin connector in plated holes or pads instead of headers)
+    (flash-bin && play banjo-kazooie.mp3 && sleep 1 && goto start)
   * remove UART-to-Serial chip
     (replace with FTDI cable)
   * remove unused, e.g. ethernet, USB etc.
@@ -677,6 +678,9 @@ Going from devboard, e.g. Discovery to PCB:
     (add test pins where things can go wrong e.g. ground pins, power rails, communication busses)
     (balancing act between how small product board is. could add an 'elephant board' concept)
   * FCC/EMC for unintentional EM radiation (other certifications)
+    (can actually search for product on ffcid.io)
+
+For example projects look at hackaday prize winners?
 
 ## Week 7 
 Schedule slips, so decide features included in update in the field (even more so as time between sending to factory and in user hands is a few months for consumer products)
@@ -687,6 +691,7 @@ Code will be communicated to it and written to codespace
 If programming fails due to power outage, bootloader can retry
 Really only use on-board bootloader if multiple MCUs or bootloader is built into silicon for extremely resource constrained
 (multiple MCUs useful for low-power as can have large one mostly dormant until required?)
+(or STM MCU and say a BLE MCU?)
 
 We want an custom bootloader:
   * both bootloader and runtime code updated separately
@@ -709,3 +714,17 @@ Therefore, device monitoring:
   * heartbeat log (to show alive, e.g. power usage and battery life)
   * diagnostics (what device crashed, what firmware are they running, etc.)
 
+General security:
+  * CI
+  * static analysers
+  * treat all external data as malicious:
+    - buffer overflows (prevent stack frame overwrite for code execution)
+
+security, bootloader updates and general device management at start of project?
+
+NRF connect for automating BLE bootloader testing
+Also have phone apps for DFU (better to test on phone, )
+AWS device farm?
+
+In interview, as a student can bring modern software practices
+This is the portfolio I have, here is want I can bring
