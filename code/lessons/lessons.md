@@ -665,3 +665,47 @@ Embedded avoid malloc()s as fragmentation becomes more of an issue, when dealing
 non-volatile RAM more like flash, except speeds like RAM (as literal name is a contradiction)
 keep variables on waking up from deep sleep
 TODO: can mark certain areas of flash as non-volatile?
+
+Going from devboard, e.g. Discovery to PCB:
+  * remove ICDI chip 
+    (replace with JTAG pins. could use Tag-Connect, i.e. springy pogo pin connector in plated holes instead of headers)
+  * remove UART-to-Serial chip
+    (replace with FTDI cable)
+  * remove unused, e.g. ethernet, USB etc.
+    (replace with battery? wall wart?)
+  * smaller surface area, remove jumpers (IDD pin and actual GPIO pins), buttons, sensors, leds, plated holes, etc.
+    (add test pins where things can go wrong e.g. ground pins, power rails, communication busses)
+    (balancing act between how small product board is. could add an 'elephant board' concept)
+  * FCC/EMC for unintentional EM radiation (other certifications)
+
+## Week 7 
+Schedule slips, so decide features included in update in the field (even more so as time between sending to factory and in user hands is a few months for consumer products)
+Often when turning on a new product have to power cycle (turn on and off) for firmware update
+
+On board bootloader cannot be changed after leaving factory
+Code will be communicated to it and written to codespace
+If programming fails due to power outage, bootloader can retry
+Really only use on-board bootloader if multiple MCUs or bootloader is built into silicon for extremely resource constrained
+(multiple MCUs useful for low-power as can have large one mostly dormant until required?)
+
+We want an custom bootloader:
+  * both bootloader and runtime code updated separately
+  * code can be validated
+  * 2x size of programmed code in flash
+
+Due to IoT, our devices could become botnets or leak user data
+So, use CRC (hash is better) to ensure image sent is image recieved 
+Also, sign so we know where it came from
+Per-company keys is easier, however per device key is more secure
+At a minimum, OTA bundle:
+  * version
+  * hash
+  * signature
+  * (3x flash size to have a known 'factory' image?)
+
+Now, as scaling to 1million devices; will encounter 1 in a million problems
+Therefore, device monitoring:
+  * error log
+  * heartbeat log (to show alive, e.g. power usage and battery life)
+  * diagnostics (what device crashed, what firmware are they running, etc.)
+
