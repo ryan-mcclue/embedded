@@ -674,6 +674,7 @@ Going from devboard, e.g. Discovery to PCB:
     (replace with FTDI cable)
   * remove unused, e.g. ethernet, USB etc.
     (replace with battery? wall wart?)
+  * for speed add codec, e.g. audio TLV320AIC
   * smaller surface area, remove jumpers (IDD pin and actual GPIO pins), buttons, sensors, leds, plated holes, etc.
     (add test pins where things can go wrong e.g. ground pins, power rails, communication busses)
     (balancing act between how small product board is. could add an 'elephant board' concept)
@@ -757,3 +758,17 @@ INTERVIEWING:
   1. Creativity
   2. Technical Knowledge
   3. People Skills
+
+## Week 8
+Map files, memory layout of system, i.e. RAM and Flash (bootloaders, error traces)
+(perhaps linker script more informative for sections though)
+Memory map could give indication for memory corruption, e.g overwriting stack or global?
+Memory layout in Flash
+  * image header (serial number, keys)
+  * reset vectors (these could be in flash, i.e could be functions copied over to .ramfuncs in cstartup for speed?)
+  * .text
+  * .rodata/.consts
+  * .cinit
+  * ...
+  * nv storage? (could also have some storage system, file system etc.)
+  * bootloader?

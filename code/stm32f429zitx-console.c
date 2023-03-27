@@ -4,6 +4,8 @@
 
 GLOBAL Console global_console;
 
+// TODO(Ryan): Add a csv output, for perusal in a serial oscilloscope app
+
 INTERNAL STATUS 
 stm32f429zitx_create_console(MemArena *perm_arena, u32 cmd_str_buf_len, UartParams *uart_params)
 {
