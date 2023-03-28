@@ -9,4 +9,4 @@
 //  * mcu runs at 1.5V-3.6V (draws less current if running at lower voltage?)
 //  * peripheral runs at 1.8V-3.6V drawing max 130mA
 
-
+// for sleeping and running query every 50ms: https://github.com/usvi/mbed-LPC1768-ledtimer
