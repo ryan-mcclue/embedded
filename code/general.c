@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: zlib-acknowledgement
 
+// more useful for dual core
 #define ARE_IN_IRQ() \
   (SCB->ICSR & SCB_ICSR_VECTACTIVE_Msk)
 

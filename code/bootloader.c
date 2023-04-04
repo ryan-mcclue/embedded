@@ -24,7 +24,16 @@
 //    (will be a block size)
 //  2. Change application Flash origin and size in linker script
 //     - Also update VECT_TAB_OFFSET appropriately
+//     (IMPORTANT: the bootloader itself should not perform vector table relocation. the firmware should)
 //  3. Debugger (disable redownloading, only load symbols of multiple binaries) 
+
+// Normally, firmware is not PIC
+// So, the firmware must be flashed at the origin address in linker script, otherwise global variable accesses will fail (why good for dynamic libraries in OS)
+// With PIC, we have a GOT (global offset table) that will patch in offsets
+// (also have PLT (procedure linkage table))
+// So, PIC necessary for having updatable bootloader, i.e. can run from any bank
+
+// minimal downtime for firmware update (have it update in background?)
 
 // https://github.com/viktorvano/STM32-Bootloader
 
@@ -78,14 +87,20 @@ jump_to_addr(u32 *addr)
   func();
 }
 
+// TODO(Ryan): look at HAL API docs first, then HAL source?
+
 INTERNAL void
 bootloader_main(void)
 {
   while (1)
   {
-
+    deinit();
+    jump_to_addr(APP1);
   }
 }
+
+
+
 
 /*
  * Header (64 bytes; make sizes of header divisible by 4):

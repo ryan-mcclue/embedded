@@ -719,7 +719,10 @@ General security:
   * CI
   * static analysers
   * treat all external data as malicious:
-    - buffer overflows (prevent stack frame overwrite for code execution)
+    - buffer overflows; generally from malformed user input (prevent stack frame overwrite for code execution)
+    (IoT chipset has more attack vectors than traditional embedded, so more careful) 
+
+https://bugprove.com/knowledge-hub/enhancing-device-security-beyond-firmware-encryption/
 
 security, bootloader updates and general device management at start of project?
 
@@ -772,3 +775,47 @@ Memory layout in Flash
   * ...
   * nv storage? (could also have some storage system, file system etc.)
   * bootloader?
+
+PSRAM (pseudo static RAM)
+
+Optimising Memory:
+Map file can be used to see what is taking up RAM or Flash, e.g. string constants
+Look at largest consumers first
+Could be monolithic library functions that need replacing
+
+Debugging:
+* Debugger will contain backtrace information. Compare this with information in map file
+* Memory corruption (global buffer overflowing) 
+* Tracing; as storing strings memory costly, just address and compare that with map file to see what function
+
+Bootloader first check if new code available, then always check if code about to jump to is valid
+
+TODO: memory has wait states? so, move critical function to RAM with less wait state than Flash? (in fact, RAM is zero wait state?)
+
+IMPORTANT: DMA is part of ARM core. As is AHB bus (which DMA, Flash, SRAM talk to)
+
+Very likely that things change as project progresses, e.g. want AI now, so current part is not fast enough nor has enough flash for machine learning
+The part was not a bad choice; it was the best choice at that time; now things have changed (that's what an engineer is, making mistakes and learning from them)
+Typically start out with a MCU family in the middle, e.g. don't need M4F with all bells and whistles.
+If down the road, need to optimise for power, can go down etc.
+
+Alias Flash to 0x00 so can relocate interrupt table
+
+IoT (all require some form of online device sign up?):
+  * BLE -> Phone -> WiFi (portable)
+    id 
+  * WiFi (stationary)
+    SSID, password, AP mode
+  * Cell modem (portable constant coverage)
+  * Lora (intermittent data; not really for consumer products as configuration esoteric, noise susceptible and particular base stations)
+  (ZigBee like BLE and WiFi but slow)
+
+IMPORTANT: heap and stack pointer are next available 
+
+## Week 9
+Taylor series useful for approximating functions, e.g. quicker to perform Taylor series expansion of say `e**0.1`
+
+CMSIS is for all cortex processors
+
+CMSIS reference for neural networks, fft, etc.
+Q numbers are fixed point numbers

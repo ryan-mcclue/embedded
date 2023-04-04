@@ -153,6 +153,9 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
     test_compiler_flags+=( "${common_debug_flags[@]}" "--coverage" )
     simulator_compiler_flags+=( "${common_debug_flags[@]}" )
 
+   # TODO(Ryan): Perhaps enclose libraries to allow for any ordering:
+   # -Wl,--start-group -llib1 -llib2 -Wl,--end-group
+
   elif [[ "$param_mode" == "release" ]]; then
     common_release_flags=( "-DRELEASE_BUILD" "-Os" "-ffast-math" "-fipa-pta" )
     target_compiler_flags+=( "${common_release_flags[@]}" ) 
