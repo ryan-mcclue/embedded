@@ -31,7 +31,9 @@ typedef double f64;
 #else
   #define INTERNAL
 #endif
-#define GLOBAL_CONST PROGMEM
+
+// TODO(Ryan): Does adding const place in flash?
+// #define GLOBAL_CONST static const
 
 #if defined(TEST_BUILD)
   GLOBAL u32 global_forever_counter = 1;
@@ -186,63 +188,33 @@ struct SourceLoc
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-// NOTE(Ryan): Returns a u32 to account for situations when used in a ternary that requires operands of the same type 
-INTERNAL u32 __fatal_error(const char *file_name, const char *func_name, int line_num, 
-                            const char *message)
-{ 
-  fprintf(stderr, "FATAL ERROR TRIGGERED! (%s:%s:%d)\n\"%s\"\n", file_name, 
-          func_name, line_num, message);
-  #if !defined(MAIN_DEBUGGER)
-    // IMPORTANT(Ryan): If using fork(), will not exit entire program
-    exit(1); 
-  #endif
 
-  return 0;
-}
+#define BP_IF_DEBUGGER_ATTACHED() \
+  do \
+  { \
+    if (CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk) \
+    { \
+      __asm("bkpt 1"); \
+    } \
+  } while (0)
 
-INTERNAL u32 __fatal_error_errno(const char *file_name, const char *func_name, int line_num, 
-                                  const char *message)
-{ 
-  const char *errno_msg = strerror(errno);
-  fprintf(stderr, "FATAL ERROR ERRNO TRIGGERED! (%s:%s:%d)\n%s\n\"%s\"\n", file_name, 
-          func_name, line_num, errno_msg, message);
-  #if !defined(MAIN_DEBUGGER)
-    // IMPORTANT(Ryan): If using fork(), will not exit entire program
-    exit(1);
-  #endif
 
-  return 0;
-}
+#define GET_LR() __builtin_return_address(0)
+#define GET_PC(_a) __asm volatile ("mov %0, pc" : "=r" (_a)) 
 
-INTERNAL void errno_inspect(void)
+INTERNAL void
+__assert(u32 line, u32 *pc, u32 *lr)
 {
-  const char *errno_msg = strerror(errno);
-  return;
+  // TODO(Ryan): Eventually log these parameters
+  BP();
 }
 
-INTERNAL void __bp(void) {}
+// TODO(Ryan): Using python to store code sizes in database
+// https://github.com/memfault/interrupt/tree/master/example/code-size-deltas
 
 // TODO(Ryan): NVIC registers understanding, e.g. know when there is an unhandled interrupt
 
-// DefaultIntHandler is used for unpopulated interrupts
-static void DefaultIntHandler(void) {
-  __asm__("bkpt");
-  // Go into an infinite loop.
-  while (1)
-    ;
-}
-
-// https://github.com/memfault/interrupt/tree/master/example/debugging-asserts/impls
-
-// IMPORTANT(Ryan): Programmatically setting breakpoints works
-#define BP_IF_DEBUGGING()                              \
-  do {                                                   \
-    if (CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk) { \
-      __asm("bkpt 1");                                   \
-    }                                                    \
-} while (0)
-
-
+// TODO(Ryan): What is DebugMonitor?
 typedef struct __attribute__((packed)) ContextStateFrame {
   u32 r0;
   u32 r1;
@@ -258,8 +230,6 @@ typedef struct __attribute__((packed)) ContextStateFrame {
 // does not get optimized away
 __attribute__((optimize("O0")))
 void my_fault_handler_c(sContextStateFrame *frame) {
-  // If and only if a debugger is attached, execute a breakpoint
-  // instruction so we can take a look at what triggered the fault
   HALT_IF_DEBUGGING();
 
   // Logic for dealing with the exception. Typically:
@@ -268,6 +238,38 @@ void my_fault_handler_c(sContextStateFrame *frame) {
   //    - clear errors and return back to Thread Mode
   //  - else
   //    - reboot system
+
+  //
+  // Example "recovery" mechanism for UsageFaults while not running
+  // in an ISR
+  // 
+
+  // fault status register
+  volatile uint32_t *cfsr = (volatile uint32_t *)0xE000ED28;
+  const uint32_t usage_fault_mask = 0xffff0000;
+  const bool non_usage_fault_occurred = (*cfsr & ~usage_fault_mask) != 0;
+  // the bottom 8 bits of the xpsr hold the exception number of the
+  // executing exception or 0 if the processor is in Thread mode
+  const bool faulted_from_exception = ((frame->xpsr & 0xFF) != 0);
+    
+  if (faulted_from_exception || non_usage_fault_occurred) {
+    // For any fault within an ISR or non-usage faults let's reboot the system
+    volatile uint32_t *aircr = (volatile uint32_t *)0xE000ED0C;
+    *aircr = (0x05FA << 16) | 0x1 << 2;
+    while (1) { } // should be unreachable
+  }
+
+  // If it's just a usage fault, let's "recover"
+  // Clear any faults from the CFSR
+  *cfsr |= *cfsr;
+  // the instruction we will return to when we exit from the exception
+  frame->return_address = (uint32_t)recover_from_task_fault;
+  // the function we are returning to should never branch
+  // so set lr to a pattern that would fault if it did
+  frame->lr = 0xdeadbeef;
+  // reset the psr state and only leave the
+  // "thumb instruction interworking" bit set
+  frame->xpsr = (1 << 24);
 }
 
 #define HARDFAULT_HANDLING_ASM(_x)               \
@@ -280,20 +282,23 @@ void my_fault_handler_c(sContextStateFrame *frame) {
                                                  )
 
 
-
-#define FATAL_ERROR(msg) __fatal_error(__FILE__, __func__, __LINE__, msg)
-#define ERRNO_FATAL_ERROR(msg) __fatal_error_errno(__FILE__, __func__, __LINE__, msg)
-
 #if defined(MAIN_DEBUG)
   // IMPORTANT(Ryan): assert() when never want to handle in production
-  #define ASSERT(c) do { if (!(c)) { FATAL_ERROR(STRINGIFY(c)); } } while (0)
-  #define ERRNO_ASSERT(c) do { if (!(c)) { ERRNO_FATAL_ERROR(STRINGIFY(c)); } } while (0)
-  #define BP() __bp()
+#define ASSERT(expr)   \
+  do {                         \
+    if (!(expr)) {             \
+      void *pc = NULL; \
+      GET_PC(pc); \
+      void *lr = GET_LR(); \
+      __assert(__LINE__, pc, lr); \
+    }                          \
+  } while (0)
+
+  #define BP() BP_IF_DEBUGGER_ATTACHED()
   #define UNREACHABLE_CODE_PATH ASSERT(!"UNREACHABLE_CODE_PATH")
   #define UNREACHABLE_DEFAULT_CASE default: { UNREACHABLE_CODE_PATH }
 #else
-  #define ASSERT(c)
-  #define ERRNO_ASSERT(c)
+  #define ASSERT(expr)
   #define BP()
   #define UNREACHABLE_CODE_PATH UNREACHABLE() 
   #define UNREACHABLE_DEFAULT_CASE default: { UNREACHABLE() }
@@ -493,3 +498,105 @@ void my_fault_handler_c(sContextStateFrame *frame) {
 )
 
 #endif
+
+
+// TODO(Ryan): put in interrupt file
+INTERNAL void 
+break_and_loop_fault_handler(void) 
+{
+  BP();
+  while (1) {}
+}
+
+void trigger_irq(void) {
+  volatile uint32_t *nvic_iser = (void *)0xE000E100;
+  *nvic_iser |= (0x1 << 1);
+
+  // Pend an interrupt
+  volatile uint32_t *nvic_ispr = (void *)0xE000E200;
+  *nvic_ispr |= (0x1 << 1);
+
+  // flush pipeline to ensure exception takes effect before we
+  // return from this routine
+  __asm("isb");
+}
+
+void stkerr_from_psp(void) {
+  extern uint32_t _start_of_ram[];
+  uint8_t dummy_variable;
+  const size_t distance_to_ram_bottom = (uint32_t)&dummy_variable - (uint32_t)_start_of_ram;
+  volatile uint8_t big_buf[distance_to_ram_bottom - 8];
+  for (size_t i = 0; i < sizeof(big_buf); i++) {
+    big_buf[i] = i;
+  }
+  
+  trigger_irq();
+}
+
+int bad_memory_access_crash(void) {
+  volatile uint32_t *bad_access = (volatile uint32_t *)0xdeadbeef;
+  return *bad_access;
+}
+
+int illegal_instruction_execution(void) {
+  int (*bad_instruction)(void) = (void *)0xE0000000;
+  return bad_instruction();
+}
+
+void unaligned_double_word_read(void) {
+  extern void *g_unaligned_buffer;
+  uint64_t *buf = g_unaligned_buffer;
+  *buf = 0x1122334455667788;
+}
+
+void bad_addr_double_word_write(void) {
+  volatile uint64_t *buf = (volatile uint64_t *)0x30000000;
+  *buf = 0x1122334455667788;
+}
+
+void access_disabled_coprocessor(void) {
+  // FreeRTOS will automatically enable the FPU co-processor.
+  // Let's disable it for the purposes of this example
+  __asm volatile(
+      "ldr r0, =0xE000ED88 \n"
+      "mov r1, #0 \n"
+      "str r1, [r0]	\n"
+      "dsb \n"
+      "vmov r0, s0 \n"
+      );
+}
+
+uint32_t read_from_bad_address(void) {
+  return *(volatile uint32_t *)0xbadcafe;
+}
+
+void trigger_crash(int crash_id) {
+  switch (crash_id) {
+    case 0:
+      illegal_instruction_execution();      
+      break;
+    case 1:
+      read_from_bad_address();
+      break;
+    case 2:
+      access_disabled_coprocessor();
+      break;
+    case 3:
+      bad_addr_double_word_write();
+      break;
+    case 4:
+      stkerr_from_psp();
+      break;
+    case 5:
+      unaligned_double_word_read();      
+      break;
+    case 6:
+      bad_memory_access_crash();
+      break;
+    case 7:
+      trigger_irq();
+      break;
+    default:
+      break;
+  }
+}

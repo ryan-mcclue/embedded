@@ -838,4 +838,11 @@ Generally, don't recover from a HardFault
 ## Week 10
 http://brettbeauregard.com/blog/2011/04/improving-the-beginners-pid-introduction/
 
+Reduce power by reducing:
+  * Voltage (component selection, e.g. less components in sensor)
+  * Current (less code)
+  * Resistance (component selection, e.g. less components in sensor)
+  * Time (slowly, sleep)
 
+Reading datasheet, minimum Vdd less than say 3.3V. 
+So, to get less power, use voltage divider? 
