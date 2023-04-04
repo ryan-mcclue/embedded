@@ -819,3 +819,23 @@ CMSIS is for all cortex processors
 
 CMSIS reference for neural networks, fft, etc.
 Q numbers are fixed point numbers
+
+When using ADC, can't just blindly read values.
+Must know signal looking at due to Nyquist sampling rate.
+Also, require how noisy to use filters 
+Then, need to know dynamic range, i.e. how big is signal (bit depth will introduce quantisation errors)
+So, higher bit depth can increase dynamic range or decrease quantisation error
+A pure signal should use a low bit depth to save on data
+
+Reference voltage for analog sensors and ADCs should be as noise free as possible
+(so, using a SPI ADC less noise?)
+`V = adc_counts * (3.3 / 255)`
+
+Possible if ADC does not have FIFO, have to read out channel 1 data before channel 2 conversion time otherwise overwritten
+
+Generally, don't recover from a HardFault
+
+## Week 10
+http://brettbeauregard.com/blog/2011/04/improving-the-beginners-pid-introduction/
+
+

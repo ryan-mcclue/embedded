@@ -222,6 +222,65 @@ INTERNAL void errno_inspect(void)
 
 INTERNAL void __bp(void) {}
 
+// TODO(Ryan): NVIC registers understanding, e.g. know when there is an unhandled interrupt
+
+// DefaultIntHandler is used for unpopulated interrupts
+static void DefaultIntHandler(void) {
+  __asm__("bkpt");
+  // Go into an infinite loop.
+  while (1)
+    ;
+}
+
+// https://github.com/memfault/interrupt/tree/master/example/debugging-asserts/impls
+
+// IMPORTANT(Ryan): Programmatically setting breakpoints works
+#define BP_IF_DEBUGGING()                              \
+  do {                                                   \
+    if (CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk) { \
+      __asm("bkpt 1");                                   \
+    }                                                    \
+} while (0)
+
+
+typedef struct __attribute__((packed)) ContextStateFrame {
+  u32 r0;
+  u32 r1;
+  u32 r2;
+  u32 r3;
+  u32 r12;
+  u32 lr;
+  u32 return_address;
+  u32 xpsr;
+} sContextStateFrame;
+
+// Disable optimizations for this function so "frame" argument
+// does not get optimized away
+__attribute__((optimize("O0")))
+void my_fault_handler_c(sContextStateFrame *frame) {
+  // If and only if a debugger is attached, execute a breakpoint
+  // instruction so we can take a look at what triggered the fault
+  HALT_IF_DEBUGGING();
+
+  // Logic for dealing with the exception. Typically:
+  //  - log the fault which occurred for postmortem analysis
+  //  - If the fault is recoverable,
+  //    - clear errors and return back to Thread Mode
+  //  - else
+  //    - reboot system
+}
+
+#define HARDFAULT_HANDLING_ASM(_x)               \
+  __asm volatile(                                \
+      "tst lr, #4 \n"                            \
+      "ite eq \n"                                \
+      "mrseq r0, msp \n"                         \
+      "mrsne r0, psp \n"                         \
+      "b my_fault_handler_c \n"                  \
+                                                 )
+
+
+
 #define FATAL_ERROR(msg) __fatal_error(__FILE__, __func__, __LINE__, msg)
 #define ERRNO_FATAL_ERROR(msg) __fatal_error_errno(__FILE__, __func__, __LINE__, msg)
 
