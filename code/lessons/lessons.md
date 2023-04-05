@@ -889,7 +889,35 @@ on (12mA), sleep (0.14mA)
 (0.004) / ((0.12 * 0.02) + (0.00014 * 0.98)) hours
 
 DMA allows core to be turned off?
+Lower power more concerned with peripherals, rather than actual core
 
 Although multimeter good, doesn't show varying from active to sleep states
-Oscilloscope shows varying, however if very low power, resistor becomes issue
+Oscilloscope shows varying, however if very low power, resistor becomes issue (burden measurement voltage)
 Also, large magnitude changes difficult to see
+
+In general, view what is changing, rather than exact current value
+
+IMPORTANT: JTAG gets Vcc from board, so okay to use with external battery
+(as long as Vcc pin from board tied to JTAG pin)
+
+For PPK2, use GPIO triggering when measuring from a battery so as to not create ground loop from serial console
+
+STM32 virtual EEPROM provides a emulation layer a top of Flash, for byte level writing
+Could view EEPROM as a key-value store?
+
+Always use internal pull-ups if possible (sometimes not because too weak),
+so can disable for lower power
+
+IMPORTANT: for console command groups, have a turn on and turn off command for power analysis
+
+Want test points for any communication bus that can fail
+Also want some current test points
+
+So, for low power GPIO, could maintain clock, but turn off internal pull-up (which is a current source)
+and perhaps switch to analog mode, i.e. acts as input so not driving anything?
+
+In nanoamp range, things like cleanliness of board matter, e.g. flux 
+
+For monolithic things like PlatformIO, version maintenance of libraries is a nightmare (i.e. packaging problems)
+
+ASK MENTORS THREAD

@@ -6,6 +6,7 @@ GLOBAL Console global_console;
 
 // TODO(Ryan): Add a csv output, for perusal in a serial oscilloscope app
 
+// TODO(Ryan): Perhaps print out console prompt character to indicate user can type
 INTERNAL STATUS 
 stm32f429zitx_create_console(MemArena *perm_arena, u32 cmd_str_buf_len, UartParams *uart_params)
 {

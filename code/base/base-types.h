@@ -282,6 +282,7 @@ void my_fault_handler_c(sContextStateFrame *frame) {
                                                  )
 
 
+// TODO(Ryan): Perhaps have DEBUG_STR("hi") "" to remove costly string literals in debug
 #if defined(MAIN_DEBUG)
   // IMPORTANT(Ryan): assert() when never want to handle in production
 #define ASSERT(expr)   \
