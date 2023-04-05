@@ -844,5 +844,52 @@ Reduce power by reducing:
   * Resistance (component selection, e.g. less components in sensor)
   * Time (slowly, sleep)
 
+Component Selection:
 Reading datasheet, minimum Vdd less than say 3.3V. 
 So, to get less power, use voltage divider? 
+Compiling a list of sensor information, can pick which one
+(some may have different power modes, e.g. idle, sleep, measuring etc.)
+
+For low power, sleep has to be at forefront
+i.e. we don't wait for things to happen
+Essentially, sleep for as long and as deep as possible
+
+Application Notes for lower power. GPIO settings.
+Light sleep (low milliamp to microamp)
+Deep sleep (microamp)
+Hibernate (nanoamp)
+IMPORTANT: peripherals can be set to idle as well
+
+IMPORTANT: use spreadsheet for power estimation
+
+Low Power Questions (At Start):
+1. How big battery can fit and what price?
+11mm x 4mm ($5)
+Found 40mAh, 3.7V
+2. How long must unit work between charging?
+At least 24 hours
+System can average (0.004 / 24) mA
+3. What are estimated pieces of system?
+oled (12mA, 0), accelerometer (0.165mA, 0.006mA), battery
+on state last (), sleep state last ()
+We see that cannot be on all the time, as average current less than what battery can provide
+4. Resultant restrictions
+Tweak on percentage until average current usage is within bounds
+Screen only on 5% of time
+
+Low Power Questions (At End):
+1. Different states device can be in?
+on, light sleep
+2. How long in each state
+on 5 seconds every 5 minutes, i.e:
+on (5seconds, 0.02), sleep (300seconds, 0.98)
+3. How much current in each state
+on (12mA), sleep (0.14mA)
+4. How long device last on 40mAh battery?
+(0.004) / ((0.12 * 0.02) + (0.00014 * 0.98)) hours
+
+DMA allows core to be turned off?
+
+Although multimeter good, doesn't show varying from active to sleep states
+Oscilloscope shows varying, however if very low power, resistor becomes issue
+Also, large magnitude changes difficult to see

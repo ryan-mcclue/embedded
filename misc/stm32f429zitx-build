@@ -1,5 +1,15 @@
 #!/bin/bash
 
+# versions don't differentiate binary types
+# GNU build id in .notes section
+# -Wl,--build-id; readelf -n
+# .gnu_build_id: (required as objcopy only LOAD)
+# {
+#   PROVIDE(g_note_build_id = .); (provide symbol)
+#   *(.note.gnu.build-id)
+# } > rom
+
+
 # IMPORTANT(Ryan): We cannot exit on error otherwise when tests fail, build will exit prematurely
 # set -oue pipefail
 set -u

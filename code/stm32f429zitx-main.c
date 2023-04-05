@@ -153,6 +153,31 @@ int testable_main(void)
 int main(void)
 #endif
 {
+  /*
+   typedef struct {
+    uint32_t namesz;
+    uint32_t descsz;
+    uint32_t type;
+    uint8_t data[];
+} ElfNoteSection_t;*
+
+void print_build_id(void) {
+    const uint8_t *build_id_data = &g_note_build_id.data[g_note_build_id.namesz];
+
+    printf("Build ID: ");
+    for (int i = 0; i < g_note_build_id.descsz; ++i) {
+        printf("%02x", build_id_data[i]);
+    }
+    printf("\n");
+}
+
+const size_t name_padding_bits = sizeof(uint32_t) - 1U;
+size_t desc_offset = (g_note_build_id.namesz + name_padding_bits) & ~name_padding_bits;
+const uint8_t *build_id_desc = &g_note_build_id.data[desc_offset];
+
+   */
+
+
   // TODO(Ryan): Cache init errors separately then handle later, e.g.
   // if (pwm_init_error || timer_init_error) ...
 

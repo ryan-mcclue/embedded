@@ -4,6 +4,13 @@
 // this is set in option bits
 // perhaps set these option bits for our own bootloader update?
 
+/*
+ * bootloader (immutable)
+ * loader (verify, update)
+ * application
+ * updater (temporarily replaces application to update loader)
+ */
+
 // 2048K flash
 
 // definition of Flash is to erase in blocks, so is faster than EEPROM
