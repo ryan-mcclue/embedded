@@ -920,4 +920,11 @@ In nanoamp range, things like cleanliness of board matter, e.g. flux
 
 For monolithic things like PlatformIO, version maintenance of libraries is a nightmare (i.e. packaging problems)
 
+UF2 is USB drag-and-drop bootloader file format
+
+Vin typically connected to a voltage regulator. linear regulator, so don't put too high voltage.
+drop-out regulator, so 5V to 3.3V out fine
+
+Vbat backup for RTC?
+
 ASK MENTORS THREAD
