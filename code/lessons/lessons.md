@@ -928,3 +928,29 @@ drop-out regulator, so 5V to 3.3V out fine
 Vbat backup for RTC?
 
 ASK MENTORS THREAD
+
+## Week 12
+All about layers:
+transistors -> logic gates -> adders/subtractors/multipliers -> ALU
+transistors -> logic gates -> flip-flops/latches -> memory
+
+In semiconductor; 2 areas: chip design with logic gates and physics/chemistry of transistors, lithography
+
+Have clock for:
+1. Synchronisation; knowing when data is valid
+2. Off chip communication; e.g. UART and CPU both at 5KHz; need to have a rate to compare to
+
+Machine learning a lot of linear algebra, so energy intensive and large die size required
+
+ASIC (cheapest) -> CPU (limited by ISA) -> FPGA (basically anything limited by size)
+
+Chip die-image: cores, shared cache, memory controller
+Core die-image: i-cache -> decode unit -> scheduler/branch-predictor (stores previous branch instructions) -> ALU -> load/store unit 
+(larger sizes on die more complicated, e.g. floating point unit much larger than ALU)
+On a die image, if 'plaid' pattern, indicates regular repeating, e.g. memory
+
+Registers fastest memory that lives in scheduler?
+
+Branch prediction for interleaved execution? If wrong, has to clear state
+
+Generally, performance more tenable for 'high-level programmers' when discussing data centres for machine learning and getting more computation per watt of power
