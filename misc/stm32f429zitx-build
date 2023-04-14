@@ -86,8 +86,9 @@ hil_linker_flags=()
 
 # version is git tag
 # build number is number since tag
+# $(git describe --dirty --always --tags) will show hash if not a tag
 
-# strings version | grep '@(#)' 
+# strings version | grep '@(#)'
 
 if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$param_mcu" == "stm32f429zitx" && "$build_os" == "linux" ]]; then
 
