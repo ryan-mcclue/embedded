@@ -6,7 +6,6 @@
 #include <stdarg.h>
 
 
-
 typedef struct String8 String8;
 struct String8
 {
@@ -62,6 +61,14 @@ s8(u8 *str, size_t size)
 }
 
 #define s8_lit(s) s8((u8 *)(s), sizeof(s) - 1)
+
+#if defined(MAIN_DEBUG)
+// NOTE(Ryan): Remove unecessary string literals from flash
+#define DEBUG_S8(s) s8_lit(s)
+#else
+#define DEBUG_S8(s)
+#endif
+
 #define s8_cstring(s) s8((u8 *)(s), strlen((char *)s))
 // IMPORTANT(Ryan): When substringing will run into situations where not null terminated.
 // So, use like: "%.*s", s8_varg(string)

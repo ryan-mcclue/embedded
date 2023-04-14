@@ -36,6 +36,8 @@ pop_dir() {
   command popd "$@" > /dev/null
 }
 
+# TODO(Ryan): ccache for when switching between branches affecting mtime
+
 # IMPORTANT(Ryan): Want to include bytes for initialisation values for static variables in .data section that will occupy flash
 readonly max_flash_size=$(( 2048 << 10 ))
 print_flash_usage() {
@@ -49,7 +51,7 @@ print_flash_usage() {
   flash_usage=$(( 100 * $flash_size / $max_flash_size )) 
 
   printf "Flash usage: %d / %d (%d%%)\n" $flash_size $max_flash_size $flash_usage
-}
+  }
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
   build_os="linux"
@@ -92,6 +94,13 @@ hil_linker_flags=()
 
 if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$param_mcu" == "stm32f429zitx" && "$build_os" == "linux" ]]; then
 
+  # IMPORTANT(Ryan): Check compiler version for reproducible builds 
+  gcc_version=$(arm-none-eabi-gcc -dumpversion)
+  expected_gcc_version="9.2.1"
+  if [[ "$gcc_version" != "$expected_gcc_version" ]]; then
+    error "Compiler version expected: $expected_gcc_version.\nYou are using $gcc_version"  
+  fi
+
   # TODO(Ryan): Derive version string from a meaningful source
   # TODO(Ryan): Allow for spaces
   printf -v build_date '\"%s\"' $(date '+%c(%:z%Z)' | tr ' ' '-')
@@ -123,6 +132,10 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
   target_compiler_flags+=( "-I code" "-I code/base" )
 
   target_linker_flags+=( "-Wl,--gc-sections" "-lc" "-lm" )
+
+  # TODO(Ryan): Investigate gcc flags to prevent __FILE__ from being absolute (reduce code space and normalise path names)
+  #   -ffile-prefix-map=/absolute/directory/prefix=.
+  #   -fdebug-prefix-map=$(ROOT_DIR)=.
 
   hil_compiler_flags=( "${target_compiler_flags[@]}" )
   hil_linker_flags=( "${target_linker_flags[@]}" )

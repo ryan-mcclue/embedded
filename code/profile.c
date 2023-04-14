@@ -16,6 +16,9 @@
 // ITM sends frames
 // ITM typically used as a printf for logging
 
+// so, if using SWO printf would just be plain ASCII?
+// ITM implies framing
+// however, both use the ITM hardware as SWO is a trace pin
 
 // void putc(char c) {
 //   while (ITM_STIM32(0) == 0);

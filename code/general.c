@@ -7,21 +7,17 @@
 #define SYSCLOCK_MHZ() \
   ((u16)(SystemCoreClock * (f32)(1e-6)))
 
+#define MCU_GET_SIGNATURE()     (DBGMCU->IDCODE & 0x00000FFF)
+#define MCU_GET_REVISION()      ((DBGMCU->IDCODE >> 16) & 0x0000FFFF)
 
-#define INIT_CYCLE_COUNTER() \
-    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk
+#define MCU_FLASH_SIZE_ADDRESS (0x1FFF7A22)
+#define FLASH_SIZE_KB     (*(volatile u16 *)(MCU_FLASH_SIZE_ADDRESS))
 
-#define ENABLE_CYCLE_COUNTER() \
-    DWT->CTRL |=  DWT_CTRL_CYCCNTENA_Msk
+#define MCU_ID_ADDRESS (0x1FFF7A10)
+#define MCU_ID_U8      ((*(volatile u8 *)(MCU_ID_ADDRESS)
+#define MCU_ID_U16     ((*(volatile u16 *)(MCU_ID_ADDRESS)
+#define MCU_ID_U32     ((*(volatile u32 *)(MCU_ID_ADDRESS)
 
-#define DISABLE_CYCLE_COUNTER() \
-    (DWT->CTRL &= (~DWT_CTRL_CYCCNTENA_Msk))
-
-#define GET_CYCLE_COUNTER() \
-    (DWT->CYCCNT)
-
-#define RESET_CYCLE_COUNTER() \
-    (DWT->CYCCNT = (0))
 
 INTERNAL void 
 delay_us(u32 us)
@@ -349,16 +345,6 @@ main(void)
 	TM_PVD_Enable(TM_PVD_Level_3, TM_PVD_Trigger_Rising_Falling);
 }
 
-#define MCU_GET_SIGNATURE()     (DBGMCU->IDCODE & 0x00000FFF)
-#define MCU_GET_REVISION()      ((DBGMCU->IDCODE >> 16) & 0x0000FFFF)
-
-#define MCU_FLASH_SIZE_ADDRESS (0x1FFF7A22)
-#define FLASH_SIZE_KB     (*(volatile u16 *)(MCU_FLASH_SIZE_ADDRESS))
-
-#define MCU_ID_ADDRESS (0x1FFF7A10)
-#define MCU_ID_U8      ((*(volatile u8 *)(MCU_ID_ADDRESS)
-#define MCU_ID_U16     ((*(volatile u16 *)(MCU_ID_ADDRESS)
-#define MCU_ID_U32     ((*(volatile u32 *)(MCU_ID_ADDRESS)
 
 typedef struct {
 	float Load;      /*!< CPU load percentage */
