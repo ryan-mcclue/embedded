@@ -86,7 +86,6 @@ hil_linker_flags=()
 
 # version is git tag
 # build number is number since tag
-# all based on git commits
 
 # strings version | grep '@(#)' 
 
