@@ -84,6 +84,12 @@ hil_linker_flags=()
 # MilePostIncludes=${MilePostIncludeDirs[@]/#/-I}
 
 
+# version is git tag
+# build number is number since tag
+# all based on git commits
+
+# strings version | grep '@(#)' 
+
 if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$param_mcu" == "stm32f429zitx" && "$build_os" == "linux" ]]; then
 
   # TODO(Ryan): Derive version string from a meaningful source
@@ -157,7 +163,7 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
 
   if [[ "$param_mode" == "debug" ]]; then
     common_debug_flags=( "-Wno-unused-function" "-Wno-unused-variable"  "-Wno-unused-but-set-variable" "-Wno-unused-parameter" "-Wno-unused-result" )
-    common_debug_flags+=( "-DDEBUG_BUILD" "-g3" "-gdwarf-2" "-O0" )
+    common_debug_flags+=( "-DDEBUG_BUILD" "-g3" "-gdwarf-2" "-Og" )
     target_compiler_flags+=( "${common_debug_flags[@]}" )
     hil_compiler_flags+=( "${common_debug_flags[@]}" )
     test_compiler_flags+=( "${common_debug_flags[@]}" "--coverage" )

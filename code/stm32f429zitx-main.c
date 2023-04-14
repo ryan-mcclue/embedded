@@ -153,6 +153,10 @@ int testable_main(void)
 int main(void)
 #endif
 {
+  // unsigned overflow for tick rate could be reason for system rebooting every 200days etc.
+
+  // TODO(Ryan): blink LED when doing a reset
+
   /*
    typedef struct {
     uint32_t namesz;
