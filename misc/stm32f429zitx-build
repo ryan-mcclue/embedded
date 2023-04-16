@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# TODO(Ryan): Investigate useful pre-commit hooks, e.g. ensure file naming convention
+
 # versions don't differentiate binary types
 # GNU build id in .notes section
 # -Wl,--build-id; readelf -n
@@ -186,6 +188,8 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
    # -Wl,--start-group -llib1 -llib2 -Wl,--end-group
 
   elif [[ "$param_mode" == "release" ]]; then
+    # IMPORTANT(Ryan): For speed critical functions, use __attribute__((optimize("O3")))
+    # TODO(Ryan): Perhaps add -flto to further reduce size? However as unity build, perhaps increase compile time not worth it?
     common_release_flags=( "-DRELEASE_BUILD" "-Os" "-ffast-math" "-fipa-pta" )
     target_compiler_flags+=( "${common_release_flags[@]}" ) 
     test_compiler_flags+=( "${common_release_flags[@]}" ) 

@@ -2,6 +2,19 @@
 #if !defined(BASE_CORTEX_M4_H)
 #define BASE_CORTEX_M4_H
 
+// semihosting allows cortex to use host IO facitilies
+// ARM will indicate to host wants a semihosting operation (via attached debugger). host will put result in r0
+// (link with newlib and rdimon)
+// certain semihosting operations defined: file, terminal, time etc.
+// useful to say transfer image data to PC:
+// int fd = open("framebuffer.bin", O_CREAT | O_SYNC); write(fd, framebuffer, SIZE_OF_FRAMEBUFFER); close(fd); 
+#if defined(SEMIHOSTING)
+#endif
+
+// DAP (Debug Access Port) is a cortexm4 subsystem used to debug silicon
+// It implements ARM debug specification, i.e. expose certain pins for debugger etc.
+// DAP implements various interfaces, e.g. JTAG, SWD
+
 // ENIAC breakpoint was physically unplugging cable  
 // cortexm4 uses FPB (flash patch and breakpoint unit) for hardware breakpoints
 
@@ -188,6 +201,11 @@ __assert(u32 line, u32 *pc, u32 *lr)
   // TODO(Ryan): Eventually log these parameters
   BP();
 }
+
+// TODO(Ryan): Renode for testing
+
+// TODO(Ryan): Don't compile out ASSERTS for embedded. Want to crash and reboot!!!
+// IMPORTANT(Ryan): Don't assert on hardware results  
 
 #if defined(MAIN_DEBUG)
   // IMPORTANT(Ryan): assert() when never want to handle in production

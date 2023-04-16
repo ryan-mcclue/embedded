@@ -1,5 +1,9 @@
 // IMPORTANT(Ryan): APPLY FOR RELEVENT INTERNSHIP WHEN NEAR END OF READYGRAD SO HAVE A 'CURRENT EMPLOYER' FIELD
 
+// TODO(Ryan): When in debug hardcode:
+// u8 device_eui[8] = { 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff };
+
+
 // IMPORTANT(Ryan): Remove #defines to enable peripherals when required
 //#include "stm32f4xx_hal_conf.h"
 
@@ -153,6 +157,12 @@ int testable_main(void)
 int main(void)
 #endif
 {
+  // if (current_version > new_version) // don't downgrade
+
+  // TODO(Ryan): break if reset on watchdog
+  // check_reset_reboot_reason();
+  // enable_hardware_watchdog();
+
   // unsigned overflow for tick rate could be reason for system rebooting every 200days etc.
 
   // TODO(Ryan): blink LED when doing a reset
