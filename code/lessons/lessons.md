@@ -611,6 +611,7 @@ assert for things never should happen
 peripheral errors (common in say bluetooth, etc.) always log and handle with error codes (HOWEVER, FIRST BASIC ERROR HANDLING STRATEGY IS LED BLINKING)
 
 Programmer errors use asserts
+
 Software errors:
   * (on dev): capture state of the device (heap, stacks, registers, the works) and assert
   * (release): error codes
@@ -625,7 +626,8 @@ Critical errors:
   For a device installed in people's homes and connected over the internet a last resort is reboot into a "recovery" image. 
   This image does not do the usual work of the device, instead it reports the fault over the network and then waits for repairs to be sent back over the network.
 
-
+IMPORTANT(Ryan): Although called 'error', ideally want to handle them so they become part of normal program flow
+Distinction between debug and release is actually handling errors as oppose to just asserting on them
 typedef enum
 {
    // start at 0 as represent number of led blinks
