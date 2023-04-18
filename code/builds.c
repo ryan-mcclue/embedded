@@ -1,5 +1,9 @@
 // SPDX-License-Identifier: zlib-acknowledgement
 
+//https://secure.phabricator.com/book/phabflavor/article/recommendations_on_revision_control/ 
+
+//You can create a branch protection rule to enforce certain workflows for one or more branches, such as requiring an approving review or passing status checks for all pull requests merged into the protected branch.
+
 // bug sourcing: https://interrupt.memfault.com/blog/git-bisect
 
 // version (tags, branches)
@@ -14,7 +18,19 @@
 // reproducible (so can go back for older binaries and regenerate symbols)
 // (should compile from different directories)
 
-// https://www.heroku.com/postgres
+// elephant sql database hosting platform built on AWS
+// DBMS will run server (default 5432)
+// (maintanence database is default database to connect to)
+// (database has schema in which a table resides)
+// (connecting to a specific database will use a URL, i.e. different string)
+// "pg_ctl -l $PGDATA/log start" && sudo -u postgres psql && "pg_ctl stop"
+// CREATE USER ryan WITH PASSWORD 'ryan';
+// CREATE DATABASE embedded;
+// GRANT ALL PRIVILEGES ON DATABASE embedded to ryan;
+// CREATE TABLE clients (id SERIAL PRIMARY KEY, first_name VARCHAR, last_name VARCHAR, role VARCHAR);
+// INSERT INTO clients (first_name, last_name, role) VALUES ('John', 'Smith', 'CEO');
+
+
 // build metrics database (free hosted db --> postgres://<username>:<password>@<server>:<port>/<database_name>) 
 // (redash to visualise?)
 

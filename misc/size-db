@@ -1,5 +1,9 @@
+all_master_commits=$(git rev-list --first-parent master)
+
 for commit in $(git rev-list --first-parent master); do
   parent=$(git rev-parse a2bc514653^1)
 
   git checkout $commit
 done
+
+
