@@ -2,6 +2,8 @@
 
 #include "stm32f429zitx-console.h"
 
+// rs485 another serial standard for better long range transmission and better noise handling
+
 GLOBAL Console global_console;
 
 // TODO(Ryan): Add a csv output, for perusal in a serial oscilloscope app
@@ -270,6 +272,7 @@ console_printf_nested(char *fmt, va_list args)
 
 }
 
+// TODO(Ryan): For release push these messages to a circular buffer
 INTERNAL void
 console_log(char *fmt, ...)
 {

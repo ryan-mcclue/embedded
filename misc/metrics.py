@@ -3,6 +3,8 @@
 
 # Specifically, this means that an entire conceptual changeset ("add a foo widget") is represented in the remote as exactly one commit (in some form), not a sequence of checkpoint commits.
 
+# AWS High Level Services, e.g. Compute (EC2 for virtual machine)/Storage/Database etc.
+
 # want these for things in master branch only?
 
 # .text, .bss, .data, commit, build
@@ -23,8 +25,14 @@ from urllib.parse import urlparse
 import psycopg2
 
 @dataclass
-class CodeSize:
-  name: str
+class CodeSizeTableEntry:
+  created_at: str
+  git_hash: str 
+  parent_git_hash: str
+  build_type: str
+  text_bytes: int
+  data_bytes: int
+  bss_bytes: int
 
 def fatal_error(msg):
   print(msg)

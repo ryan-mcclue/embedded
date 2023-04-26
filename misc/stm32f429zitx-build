@@ -176,6 +176,22 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
   target_compiler_flags+=( "-mfloat-abi=hard" "-mfpu=fpv4-sp-d16" "--specs=nano.specs" )
   target_linker_flags+=( "-lnosys" "-Wl,-Map=build/${param_mcu}-target-${param_mode}.map,--cref" )
 
+  # IMPORTANT(Ryan): debug information is in non-loadable sections, so no space when flashing
+  # Larger map file and compile time
+  # IN GENERAL WANT TO AVOID SHIPPING BUILD THAT HASN'T BEEN TESTED
+  # ONE WAY TO MAKE THIS EASIER IS TO KEEP 'PRODUCTION' LEVEL THINGS FROM GET GO
+  # PERHAPS HAVE FEATURE MACROS
+  # strip --remove-section=.note.gnu.build-id hello-no-debug hello-with-debug 
+  # So, always have same optimisation values to avoid things breaking in field as haven't encountered bugs on release
+  # release affects step-debugging though ...
+  # So, keep these at 'production' level throughout:
+  #  LOGGING: I’d recommend instead, sticking with the production level, and in exceptional cases (problematic device), upgrade to a more verbose level temporarily
+  #           Depending on the particular system, it may be preferable to adjust verbosity at runtime and keep the build the same. For example, leave WARNING and ERROR enabled by default, but allow increasing verbosity via a persistent on-device setting, or a temporary runtime flag.
+  #           Be especially wary of builds with different log verbosity- it can impact timing and memory usage dramatically!
+  #  CONSOLE
+  #  SIGNED BUILDS: It might make the most sense to have a separate “development” key for signing/encrypting development builds. A key that is separate and has different security concerns than the production key. 
+  # 
+
   if [[ "$param_mode" == "debug" ]]; then
     common_debug_flags=( "-Wno-unused-function" "-Wno-unused-variable"  "-Wno-unused-but-set-variable" "-Wno-unused-parameter" "-Wno-unused-result" )
     common_debug_flags+=( "-DDEBUG_BUILD" "-g3" "-gdwarf-2" "-Og" )
