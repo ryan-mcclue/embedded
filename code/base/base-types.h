@@ -32,9 +32,6 @@ typedef double f64;
   #define INTERNAL
 #endif
 
-// TODO(Ryan): Does adding const place in flash?
-// #define GLOBAL_CONST static const
-
 #if defined(TEST_BUILD)
   GLOBAL u32 global_forever_counter = 1;
   #define FOREVER (global_forever_counter--) 

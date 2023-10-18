@@ -176,6 +176,7 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
   target_compiler_flags+=( "-mfloat-abi=hard" "-mfpu=fpv4-sp-d16" "--specs=nano.specs" )
   target_linker_flags+=( "-lnosys" "-Wl,-Map=build/${param_mcu}-target-${param_mode}.map,--cref" )
 
+  # IMPORTANT(Ryan): IN GENERAL, MINIMISE DIFFERENT FEATURE SETS BETWEEN DEBUG AND RELEASE BUILDS 
   # IMPORTANT(Ryan): debug information is in non-loadable sections, so no space when flashing
   # Larger map file and compile time
   # IN GENERAL WANT TO AVOID SHIPPING BUILD THAT HASN'T BEEN TESTED
@@ -194,6 +195,7 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
 
   if [[ "$param_mode" == "debug" ]]; then
     common_debug_flags=( "-Wno-unused-function" "-Wno-unused-variable"  "-Wno-unused-but-set-variable" "-Wno-unused-parameter" "-Wno-unused-result" )
+    # TODO(Ryan): add -gz to compress debug information
     common_debug_flags+=( "-DDEBUG_BUILD" "-g3" "-gdwarf-2" "-Og" )
     target_compiler_flags+=( "${common_debug_flags[@]}" )
     hil_compiler_flags+=( "${common_debug_flags[@]}" )

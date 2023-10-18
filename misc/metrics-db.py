@@ -1,11 +1,34 @@
 #!/usr/bin/python3
 # SPDX-License-Identifier: zlib-acknowledgement
 
-# Specifically, this means that an entire conceptual changeset ("add a foo widget") is represented in the remote as exactly one commit (in some form), not a sequence of checkpoint commits.
+# Specifically, this means that an entire conceptual changeset ("add a foo widget") 
+# is represented in the remote as exactly one commit (in some form), not a sequence of checkpoint commits.
 
 # AWS High Level Services, e.g. Compute (EC2 for virtual machine)/Storage/Database etc.
 
 # want these for things in master branch only?
+
+import os
+import sys
+import platform
+import pathlib
+
+from dataclasses import dataclass
+
+from urllib.parse import urlparse
+
+import psycopg2
+
+def warn(msg):
+  print(msg)
+  if __debug__:
+    breakpoint()
+    sys.exit()
+
+def fatal_error(msg):
+  print(msg)
+  breakpoint()
+  sys.exit()
 
 # .text, .bss, .data, commit, build
 #    revision: a2bc51465395057e3830614b20ceea10976204bb
@@ -14,18 +37,10 @@
 #    text: 130,780 B
 #    data: 3,356 B
 #    bss: 21,167 B
-
-import os
-import sys
-
-from dataclasses import dataclass
-
-from urllib.parse import urlparse
-
-import psycopg2
+# also store build times with compiler used, unity, hal, os, LOC, etc.
 
 @dataclass
-class CodeSizeTableEntry:
+class MetricTuple:
   created_at: str
   git_hash: str 
   parent_git_hash: str
@@ -34,18 +49,33 @@ class CodeSizeTableEntry:
   data_bytes: int
   bss_bytes: int
 
-def fatal_error(msg):
-  print(msg)
-  breakpoint()
-  sys.exit()
+def create_metrics_table(connection, cursor):
+  cursor.execute("""
+      create table metrics (
+        created_at timestamp not null default now(),
+        hash text not null,
+        parent_hash text not null,
+        build_type text not null,
+        text int4 not null,
+        data int4 not null,
+        bss int4 not null,
+        primary key (hash, build_type)
+      )""")
+  connection.commit()
+  pass
 
 def main():
+  print(f"python: {platform.python_version()} ({platform.version()})")
+
   # NOTE(Ryan): Disable breakpoints if not running under a debugger
   if sys.gettrace() is None:
     os.environ["PYTHONBREAKPOINT"] = "0"
 
+  directory_of_running_script = pathlib.Path(__file__).parent.resolve()
+  os.chdir(directory_of_running_script)
+
   if "EMBEDDED_DB_URL" not in os.environ:
-    fatal_error("Environment variable EMBEDDED_DB_URL not set")
+    fatal_error("$EMBEDDED_DB_URL not set")
 
   raw_db_url = os.environ.get("EMBEDDED_DB_URL", "postgresql://localhost:5432/embedded")
   try:
@@ -171,5 +201,4 @@ def _convert_revision_to_git_sha(revision):
         ["git", "rev-parse", "{}".format(revision)], encoding="UTF-8"
     ).strip()
 
-if __name__ == "__main__":
-  main()
+if __name__ == "__main__": main()
