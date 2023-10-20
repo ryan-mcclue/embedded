@@ -1,3 +1,7 @@
+
+
+
+
 all_master_commits=$(git rev-list --first-parent master)
 
 for commit in $(git rev-list --first-parent master); do
