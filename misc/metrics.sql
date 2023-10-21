@@ -55,7 +55,7 @@ create table build_metrics (
 );
 
 
--- INSERTIONS --
+-- DEMO INSERTIONS --
 with build_id as (
   insert into build_machines values
     (default,
@@ -136,34 +136,26 @@ insert into build_metrics values
 
 -- NOTE(Ryan): Use graph visualiser in pgadmin query tool
 -- VIEWS/FUNCTIONS --
-drop view if exists flash_vis cascade;
-create or replace view flash_vis
-as
--- TODO(Ryan): parameterise field names in function
-  select child.text_size, 
-         parent.text_size as parent_text_size, 
-  from build_metrics child
-  join build_metrics parent on child.parent_hash = parent.hash
-  order by child.created_at desc
-;
---   SELECT
---     codesizes.committed_at,
---     - (row_number() OVER (ORDER BY codesizes.created_at DESC)) AS i,
---     codesizes.revision,
---     codesizes.message,
---     codesizes.text,
---     codesizes.data,
---     codesizes.bss,
---     codesizes.parent_revision,
---     parents.text AS parent_text,
---     parents.data AS parent_data,
---     parents.data AS parent_bss,
---     codesizes.text - parents.text AS text_delta,
---     codesizes.data - parents.data AS data_delta,
---     codesizes.bss - parents.bss AS bss_delta
---   FROM
---     codesizes
---     INNER JOIN codesizes parents ON codesizes.parent_revision = parents.revision
--- ORDER BY i DESC
-
-
+-- IMPORTANT(Ryan): Requires type at call-time, e.g: `select * from delta(NULL::u32, 'text_size');`
+drop function if exists delta cascade;
+create or replace function delta(attr_type anyelement, attr text) returns table (child anyelement, parent anyelement)
+as $$
+declare 
+  column_exists integer;
+  query_str text;
+begin
+  query_str := 'select 1 from information_schema.columns where table_name = ''build_metrics'' AND column_name = ' || quote_literal(attr); 
+  execute query_str into column_exists;
+  if column_exists is not null then
+    query_str := 'select child.' || quote_ident(attr) || ', ' ||
+                 'parent.' || quote_ident(attr) || ' as parent_' || quote_ident(attr) || 
+                 ' from build_metrics child ' ||
+                 'join build_metrics parent on child.parent_hash = parent.hash ' ||
+                 'order by child.created_at desc';
+    return query execute query_str;
+  else
+    raise exception 'Column % does not exist', attr;
+  end if;
+end;
+$$
+language plpgsql;
