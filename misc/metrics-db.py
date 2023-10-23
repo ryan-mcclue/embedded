@@ -65,13 +65,17 @@ def create_metrics_table(connection, cursor):
   connection.commit()
   pass
 
+def run_cmd_lines(cmd):
+  output = subprocess.check_output(cmd, shell=True, text=True)
+  return output.splitlines()
+
 def get_top10_symbols(binary_path):
   cmd = f"arm-none-eabi-nm --print-size --size-sort --reverse-sort --radix=d {binary_path} | head -10"
-  output = subprocess.check_output(cmd, shell=True, text=True)
+  output = run_cmd_lines(cmd)
   
   syms = {}
-  for line in output.splitlines():
-    cols = line.split(" ")
+  for line in output:
+    cols = line.split()
     sym_name = cols[3]
     sym_size = int(cols[1])
 
@@ -80,10 +84,27 @@ def get_top10_symbols(binary_path):
   return syms
 
 def get_sizes(binary_path):
-  pass
+  cmd = f"arm-none-eabi-size {binary_path}"
+  output = run_cmd_lines(cmd)
 
-def get_hashes(binary_path):
-  pass
+  sizes = {}
+  cmd_output = output[1].split()
+  sizes["text"] = int(cmd_output[0])
+  sizes["data"] = int(cmd_output[1])
+  sizes["bss"] = int(cmd_output[2])
+
+  return sizes
+
+def get_hashes():
+  hashes = {}
+
+  child_hash_cmd = "git rev-parse HEAD"
+  hashes["child"] = run_cmd_lines(child_hash_cmd)[0]
+  # TODO(Ryan): Correctly handle multiple parents resulting from a merge
+  parent_hash_cmd = "git rev-parse HEAD^@"
+  hashes["parent"] = run_cmd_lines(parent_hash_cmd)[0]
+
+  return hashes
 
 def main():
   print(f"python: {platform.python_version()} ({platform.version()})")
@@ -104,6 +125,8 @@ def main():
     if not os.path.exists(abs_binary_path):
       fatal_error(f"No file found at {abs_binary_path}")
     print(get_top10_symbols(abs_binary_path))
+    print(get_sizes(abs_binary_path))
+    print(get_hashes())
 
 #  if "EMBEDDED_DB_URL" not in os.environ:
 #    fatal_error("$EMBEDDED_DB_URL not set")
