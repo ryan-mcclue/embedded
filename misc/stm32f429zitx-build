@@ -38,10 +38,6 @@ pop_dir() {
   command popd "$@" > /dev/null
 }
 
-get_top10_symbols() {
-  arm-none-eabi-nm --print-size --size-sort --radix=d build/with-libc.elf | tail -10
-}
-
 # TODO(Ryan): ccache for when switching between branches affecting mtime
 
 # IMPORTANT(Ryan): Want to include bytes for initialisation values for static variables in .data section that will occupy flash
