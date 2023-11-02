@@ -207,6 +207,7 @@ __assert(u32 line, u32 *pc, u32 *lr)
 // TODO(Ryan): Don't compile out ASSERTS for embedded. Want to crash and reboot!!!
 // IMPORTANT(Ryan): Don't assert on hardware results  
 
+// TODO(Ryan): Implement reboot on assert
 #if defined(MAIN_DEBUG)
   // IMPORTANT(Ryan): assert() when never want to handle in production
 #define ASSERT(expr)   \

@@ -119,7 +119,7 @@ def main():
   FLASH=111
   RAM=222
   if len(sys.argv) < 2:
-    fatal_error("Usage: ./metrics-db [abs-binary-path] [build_time] [flash_time] [flash-size] [ram-size] [arena-size] [loc]")
+    fatal_error("Usage: ./{sys.argv[0]} abs-binary-path build_time flash_time flash-size ram-size arena-size loc")
   else:
     abs_binary_path = sys.argv[1]
     if not os.path.exists(abs_binary_path):

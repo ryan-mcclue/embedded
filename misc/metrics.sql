@@ -29,7 +29,7 @@ create table build_machines (
 drop table if exists top10_symbols cascade;
 create table top10_symbols (
   id serial primary key,
-  symbols symbol[]
+  symbols symbol[] check (array_length(symbols, 1) = 10)
 );
 
 -- TODO(Ryan): Incorporate boot loader, i.e. track more 'sections', e.g. bootloader size, main size, etc.
@@ -51,6 +51,7 @@ create table build_metrics (
   loc u32 not null,
   build_machine integer references build_machines(id),
   top10_symbol integer references top10_symbols(id),
+  constraint hash_different check (parent_hash != hash),
   primary key (hash, build_type)
 );
 
