@@ -330,7 +330,28 @@ SPI flash erase byte is 0xff? Can only set by sectors?
 
   If see like I2C on schematic, then probably connection to peripheral on board like MEMS sensor
   Also, this might be a separate block on page, indicating connecting to another component, e.g. pull-up resistor for I2C audio
-  Schematic specific letters, e.g. SB solder bridge, U unit etc.
+  Schematic specific letters:
+    - VDD voltage rail to core MCU (also have separate E5V, U5V, 3V3, 5V, VBAT etc. and AVDD/AGND for analog powered)
+    - IDD current consumed by device
+    - IOREF (voltage logic level; stacking components to set their logic levels)
+    - SB solder bridge (control configuration options; cheaper and less intrusive than a switch)
+      JP jumper (when shorted with cap, is considered no)
+    - P[A-Z] port
+      CN connector (exposes various pins)
+    - D diode (power isolation, e.g:
+               VDD main power and VBAT is backup
+               only want VBAT to feed VDD when necessary
+               so, diode prevents VDD possibly charging VBAT)
+               (schottky diode for low voltage drop, but some reverse current leakage)
+    - U unit (ICs like voltage regulators)
+    - X oscillator
+    - B button
+    - T transistor (macroscopic as easier to interface with other components)
+      (npn used as electrons generally greater mobility than holes)
+    - L inductor (ceramic ferrite; step-up/down voltage; magnetic)
+    - C capacitor (charges and discharges; smooths/stabilises/filters and timing)
+      R resistor (plenty of voltage dividers, pull-up/down)
+    - TP test point
   (schematic often found under 'CAD resources' along with gerber files, BOM etc.)
 
   Common in embedded to overload terms, e.g. STM32 board
