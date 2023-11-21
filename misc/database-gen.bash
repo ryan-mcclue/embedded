@@ -38,26 +38,45 @@ insert_metrics_db() {
   # NOTE(Ryan): Will error on duplicate build machine
   sqlite3 "$NAME.db" < "$build_machine_str"
 
-  local build_machine_str=""
-  read -r -d '' build_machine_str <<- EOV
+  local top10_symbols=$(nm -C --print-size --size-sort --reverse-sort --radix=d build/$BINARY_NAME | head -10)
+  local top10_symbols_str=""
+  while IFS= read -r line; do
+    read -r addr size type name <<< $(echo "$line")
+    top10_symbols_str+="\"${name}\",${size},"
+  done <<< "$top10_symbols"
+
+  local sizes=$(size build/$BINARY_NAME | tail -1)
+  local text_size=$(sizes | cut -d ' ' -f1)
+  local data_size=$(sizes | cut -d ' ' -f2)
+  local bss_size=$(sizes | cut -d ' ' -f3)
+  local child_hash=$(git rev-parse HEAD)
+  local parent_hash=$(git rev-parse HEAD^@)
+
+  local metrics_str=""
+  read -r -d '' metrics_str <<- EOV
     with top10_id as (
-      insert into build_machines values
-        (default,
-         'Ubuntu 20.04.6 LTS x86_64',
-         'arm-none-eabi-gcc 9.2.1',
-         'arm-none-eabi-ld 2.34',
-         'armv7-m cortex-m4 stm32f429zitx',
-         'STMicroelectronics 1.8.1')
-       returning id
-    )
-    insert into build_metrics values
-    (
-    )
+      insert into top10_symbols values
+      (default,
+       $top10_symbols_str)
+     returning id)
+    insert into build_metrics values 
+      (default, 
+       \"$NAME\",
+       \"$PARENT_HASH\"
+       \"$CHILD_HASH\",
+       \"$BUILD_TYPE\",
+       $TEXT_SIZE,
+       $DATA_SIZE,
+       $BSS_SIZE,
+       $BUILD_TIME,
+       $LOC,
+       $BUILD_MACHINE_HASH,
+       (select id from top10_id)
+       );
   EOV
 
-  sqlite3 "$NAME.db" < "$build_machine_str"
+  sqlite3 "$NAME.db" < "$metrics_str"
 }
-
 
 
 if [[ "$PROJECT_TYPE" == "embedded" ]]; then
@@ -130,86 +149,6 @@ create table build_metrics (
   constraint hash_different check (parent_hash != hash),
   primary key (hash, build_type)
 );
-
-
--- DEMO INSERTIONS --
-with build_id as (
-  insert into build_machines values
-    (default,
-     'Ubuntu 20.04.6 LTS x86_64',
-     'arm-none-eabi-gcc 9.2.1',
-     'arm-none-eabi-ld 2.34',
-     'armv7-m cortex-m4 stm32f429zitx',
-     'STMicroelectronics 1.8.1')
-   returning id
-),
-top10_id as (
-  insert into top10_symbols values
-    (default,
-      array[
-        row('symbol0_name', 0)::symbol,
-        row('symbol1_name', 1)::symbol,
-        row('symbol2_name', 2)::symbol,
-        row('symbol3_name', 3)::symbol,
-        row('symbol4_name', 4)::symbol,
-        row('symbol5_name', 5)::symbol,
-        row('symbol6_name', 6)::symbol,
-        row('symbol7_name', 7)::symbol,
-        row('symbol8_name', 8)::symbol,
-        row('symbol9_name', 9)::symbol
-    ]::symbol[])
-   returning id
-)
-insert into build_metrics values 
-  (default, 
-   'example',
-   '5c794cd5e3e4edb9a2029424a7b35b508c7170a5',
-   '4f123cd5e3e4edb9a2029424a7b35b508c7170a5',
-   'debug',
-   4096,
-   1024,
-   256,
-   30.5,
-   1.4,
-   1.2,
-   2 << 20,
-   20.8,
-   1200,
-   (select id from build_id),
-   (select id from top10_id)),
-  (default, 
-   'example',
-   '18273825e3e4edb9a2029424a7b35b508c7170a5',
-   '5c794cd5e3e4edb9a2029424a7b35b508c7170a5',
-   'debug',
-   2*4096,
-   4*1024,
-   256/2,
-   20.5,
-   1.4,
-   1.2,
-   2 << 20,
-   20.8,
-   1200,
-   (select id from build_id),
-   (select id from top10_id)),
-  (default, 
-   'example',
-   '12938213e3e4edb9a2029424a7b35b508c7170a5',
-   '18273825e3e4edb9a2029424a7b35b508c7170a5',
-   'debug',
-   8*4096,
-   2*1024,
-   256,
-   10.5,
-   1.4,
-   1.2,
-   2 << 20,
-   20.8,
-   1200,
-   (select id from build_id),
-   (select id from top10_id));
-;
 
 -- NOTE(Ryan): Use graph visualiser in pgadmin query tool
 -- VIEWS/FUNCTIONS --
