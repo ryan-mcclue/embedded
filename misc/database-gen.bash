@@ -1,8 +1,68 @@
-# vim: set ft=sql :
+# vim: set ft=bash :
 
-set -u
-if [[ $project_type == "embedded" ]]; then
+shopt -s extglob
+CPU_INFO=$(lscpu)
+parse_cpu_info() {
+  local field_name="$1"
+  local variable_name="$2"
+
+  field_value=$(echo "$CPU_INFO" | grep "$field_name" | cut -d ':' -f2)
+  trimmed_value=${field_value##+([[:space:]])}
+
+  eval "$variable_name=\"$trimmed_value\""
+}
+
+insert_metrics_db() {
+  parse_cpu_info "Architecture" "ARCH"
+  parse_cpu_info "Model name" "MICROARCH"
+  parse_cpu_info "CPU(s)" "CORES"
+  parse_cpu_info "CPU max MHz" "FREQUENCY"
+  parse_cpu_info "Flags" "FLAGS"
+  SIMD=$(echo "$FLAGS" | grep -o '\bavx\w*\b\|\bsse\w*\b')
+  OS_RAW=$(lsb_release --description)
+  OS=${os_raw##+[[:space:]]}
+
+  local build_machine_str="${ARCH}${MICROARCH}${CORES}${FREQUENCY}${FLAGS}${SIMD}${OS}"
+  BUILD_MACHINE_HASH=$(echo -n "$build_machine_str" | sha256sum | awk '{print $1}')
+
+  local build_machine_str=""
+  read -r -d '' build_machine_str <<- EOV
+    insert into build_machines values 
+    (\"$BUILD_MACHINE_HASH\",
+     \"$OS\",
+     \"$ARCH, $MICROARCH@$FREQUENCY ($CORES cores)\", 
+     \"$COMPILER\", 
+     \"$LINKER\")
+  EOV
+
+  # NOTE(Ryan): Will error on duplicate build machine
+  sqlite3 "$NAME.db" < "$build_machine_str"
+
+  local build_machine_str=""
+  read -r -d '' build_machine_str <<- EOV
+    with top10_id as (
+      insert into build_machines values
+        (default,
+         'Ubuntu 20.04.6 LTS x86_64',
+         'arm-none-eabi-gcc 9.2.1',
+         'arm-none-eabi-ld 2.34',
+         'armv7-m cortex-m4 stm32f429zitx',
+         'STMicroelectronics 1.8.1')
+       returning id
+    )
+    insert into build_metrics values
+    (
+    )
+  EOV
+
+  sqlite3 "$NAME.db" < "$build_machine_str"
+}
+
+
+
+if [[ "$PROJECT_TYPE" == "embedded" ]]; then
   read -r -d '' build_machine_specific <<- EOV
+    target text not null,
     hal text not null,
   EOV
   read -r -d '' build_metrics_specific <<- EOV
@@ -15,9 +75,8 @@ if [[ $project_type == "embedded" ]]; then
 else
   printf "Creating desktop database"
 fi
-set +u
 
-cat <<- EOF > database.sql
+read -r -d '' DATABASE_SQL <<- EOF
 -- NOTE(Ryan): TYPES/DOMAINS
 drop domain if exists u32 cascade; 
 create domain u32 as integer default 0 check (value >= 0);
@@ -42,7 +101,6 @@ create table build_machines (
   os text not null,
   compiler text not null,
   linker text not null,
-  target text not null,
   $build_machine_specific
 );
 
@@ -178,5 +236,4 @@ begin
 end;
 $$
 language plpgsql;
-
 EOF
