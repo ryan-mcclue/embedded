@@ -45,6 +45,8 @@ insert_metrics_db() {
     top10_symbols_str+="\"${name}\",${size},"
   done <<< "$top10_symbols"
 
+  local loc=$(cat code/**/*.[ch] | wc -l)
+
   local sizes=$(size build/$BINARY_NAME | tail -1)
   local text_size=$(sizes | cut -d ' ' -f1)
   local data_size=$(sizes | cut -d ' ' -f2)
