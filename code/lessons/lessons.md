@@ -334,6 +334,7 @@ SPI flash erase byte is 0xff? Can only set by sectors?
     - VDD voltage rail to core MCU (also have separate E5V, U5V, 3V3, 5V, VBAT etc. and AVDD/AGND for analog powered)
     - IDD current consumed by device
     - IOREF (voltage logic level; stacking components to set their logic levels)
+    - COMP comparator
     - SB solder bridge (control configuration options; cheaper and less intrusive than a switch)
       JP jumper (when shorted with cap, is considered no)
     - P[A-Z] port

@@ -25,6 +25,13 @@
 //   ITM_STIM8(0) = c;
 // }
 
+// ARM Debug and Trace:
+//  - ITM
+//  - SWD: cortex-M
+//     - SWDIO
+//     - SWCLK
+//     - optional SWO pin (can output ITM info)
+
 // DWT cortex-m4 (cycles only counted when CPU is running)
 // (measuring time between cycles, must take into account cycles reading actual cycle counter variable)
 

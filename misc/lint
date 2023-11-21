@@ -1,7 +1,7 @@
 #!/bin/sh
 # SPDX-License-Identifier: zlib-acknowledgement
 
-# TODO(Ryan): May have to re-add -std=gnu11 for MISRA
+TODO(Ryan): May have to re-add -std=gnu11 for MISRA
 pclp64_linux \
   -i$HOME/prog/apps/pclint \
   -i$HOME/prog/personal/tra/code \

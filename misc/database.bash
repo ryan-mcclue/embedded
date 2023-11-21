@@ -1,4 +1,24 @@
--- TYPES/DOMAINS --
+# vim: set ft=sql :
+
+set -u
+if [[ $project_type == "embedded" ]]; then
+  read -r -d '' build_machine_specific <<- EOV
+    hal text not null,
+  EOV
+  read -r -d '' build_metrics_specific <<- EOV
+    flash_time real not null,
+    max_heap u32 not null,
+    remaining_flash real not null,
+    remaining_ram real not null,
+  EOV
+  printf "Creating embedded database"
+else
+  printf "Creating desktop database"
+fi
+set +u
+
+cat <<- EOF > database.sql
+-- NOTE(Ryan): TYPES/DOMAINS
 drop domain if exists u32 cascade; 
 create domain u32 as integer default 0 check (value >= 0);
 
@@ -14,7 +34,8 @@ create type symbol as (
   sz u32
 );
 
--- TABLES --
+-- NOTE(Ryan): TABLES
+-- TODO(Ryan): could add more details, e.g. core count, ram, sse etc.
 drop table if exists build_machines cascade;
 create table build_machines (
   id serial primary key,
@@ -22,7 +43,7 @@ create table build_machines (
   compiler text not null,
   linker text not null,
   target text not null,
-  hal text not null
+  $build_machine_specific
 );
 
 -- probably want to put flash size in here to allow for pie-chart visualisation
@@ -43,12 +64,9 @@ create table build_metrics (
   text_size u32 not null,
   data_size u32 not null,
   bss_size u32 not null,
-  remaining_flash real not null,
   build_time real not null,
-  flash_time real not null,
-  max_heap u32 not null,
-  remaining_ram real not null,
   loc u32 not null,
+  $build_metrics_specific
   build_machine integer references build_machines(id),
   top10_symbol integer references top10_symbols(id),
   constraint hash_different check (parent_hash != hash),
@@ -160,3 +178,5 @@ begin
 end;
 $$
 language plpgsql;
+
+EOF
