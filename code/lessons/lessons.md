@@ -353,7 +353,31 @@ SPI flash erase byte is 0xff? Can only set by sectors?
     - C capacitor (charges and discharges; smooths/stabilises/filters and timing)
       R resistor (plenty of voltage dividers, pull-up/down)
     - TP test point
+    - SAI (serial audio interface; serial for audio as less power)
+    - MCO (master clock output)
   (schematic often found under 'CAD resources' along with gerber files, BOM etc.)
+
+  ARM Debug Interface Architecture
+  DAP (Debug Access Port) bus.
+  Possible Debug Port are SW-DP, JTAG-DP, SWJ-DP
+  Possible Access Port are MEM-AP (access to CPU, flash etc.), JTAG-AP 
+  Debugger handles transactions, e.g. request/ack/data phases etc.
+  (attackers connect say a bus pirate two various pins and send signals hoping to get valid response)
+  (boards implement different ways to prevent access to DAP)
+  SWO is an extension of 2pin SWD interface SWDIO/SWDCK
+  ITM (Instrumentation Trace Macrocell) typically connected to SWO
+  Specific semihosting interrupt request also handled over SWO
+  Programmers by default do not provide power
+
+  TODO: https://jaycarlson.net/microcontrollers (for stats about mcus)
+  want to be able to measure current and cycles
+
+https://www.segger.com/products/debug-probes/j-link/accessories/adapters/target-supply-adapter/
+https://shop.segger.com/debug-trace-probes/debug-probes/adapters/supply-adapter
+
+  names referring to shields:
+  ST zio connector is extension of arduino uno. is black raised headers
+  ST morpho connector are male holes 
 
   Common in embedded to overload terms, e.g. STM32 board
 
