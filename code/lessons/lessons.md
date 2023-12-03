@@ -1,5 +1,22 @@
+event-driven/interrupt or polling for networking?
+https://github.com/icopy-site/awesome/blob/master/docs/awesome/Awesome-Game-Networking.md?plain=1
+
+Networking Chapter in the book Hacking The Art of Exploitation
+
 stack overflow
 https://interrupt.memfault.com/blog/using-psp-msp-limit-registers-for-stack-overflow?utm_campaign=Interrupt%20Blog&utm_medium=email&_hsmi=246134749&_hsenc=p2ANqtz--I2uVI5cNVGZRNMBVa87mOqpftnauUZVi8uvJSgdu9TVrGvJiMZDdsBHLle-dL_UM2DSZoe_VmK-dbq_Np1qg9Gd2_Xg&utm_content=246134749&utm_source=hs_email
+
+in uefi:
+- can set fan speed based on temperature
+- other frequencies to auto; inspect ram slot details; on-board leds etc.
+- set cpu overclock, e.g. 3.8GHz to 4GHz
+in grub can run memtest:
+- notice that having 8 sticks of ram at manufacturer recommended 3GHz does gives error in test 7, so set to 2.9GHz
+
+mandelbrot vanilla benchmarking?
+$(/usr/bin/time povray) for benchmarking
+run this on side (lm-sensors): https://superuser.com/questions/25176/how-can-i-monitor-the-cpu-temperature-under-linux
+
 
 # Final Project (for employer)
 YOU WANT TO TALK ABOUT THIS IN AN INTERVIEW
@@ -371,6 +388,13 @@ SPI flash erase byte is 0xff? Can only set by sectors?
 
   TODO: https://jaycarlson.net/microcontrollers (for stats about mcus)
   want to be able to measure current and cycles
+
+  TODO: protocol speeds
+
+  power profiler say at 3.3V than at say 2V to account for when battery nearly discharged? 
+
+  https://developer.nordicsemi.com/nRF_Connect_SDK/doc/latest/nrf/test_and_optimize/optimizing/power_general.html
+
 
 https://www.segger.com/products/debug-probes/j-link/accessories/adapters/target-supply-adapter/
 https://shop.segger.com/debug-trace-probes/debug-probes/adapters/supply-adapter
@@ -1002,3 +1026,6 @@ Registers fastest memory that lives in scheduler?
 Branch prediction for interleaved execution? If wrong, has to clear state
 
 Generally, performance more tenable for 'high-level programmers' when discussing data centres for machine learning and getting more computation per watt of power
+
+synchronous (more expensive than asynchronous) switching (more expensive than linear) step-down (or buck) regulator
+(expensive as gets higher efficiency at lighter loads)

@@ -1,26 +1,17 @@
 #!/bin/bash
 
 # TODO(Ryan): Investigate useful pre-commit hooks, e.g. ensure file naming convention
+set -ue
 
-
-
-build_start_time=$(date +%s.%N)
-
-if [[ "$1" == "app" ]]; then
-  set -oue pipefail
-elif [[ "$1" == "tests" ]]; then
-  # IMPORTANT(Ryan): We cannot exit on error otherwise when tests fail, build will exit prematurely
-  set -u
-else
-  printf "Usage: ./build <app|tests>\n" >&2
-  exit 1
-fi
+[[ "$1" != "app" && "$1" != "tests" ]] && error "Usage: ./build <app|tests>"
 
 BUILD_TYPE="$1"
 
 error() { printf "Error: %s\n" "$1" >&2 && exit 1; }
 push_dir() { command pushd "$@" > /dev/null; }
 pop_dir() { command popd "$@" > /dev/null; }
+
+build_start_time=$(date +%s.%N)
 
 # TODO(Ryan): ccache for when switching between branches affecting mtime
 
