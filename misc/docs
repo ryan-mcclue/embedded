@@ -1,0 +1,22 @@
+#!/bin/bash
+
+readonly docs_path="$HOME/prog/personal/docs"
+declare -A docs
+docs["$docs_path/5mm-tht-led.jpeg"]=1
+docs["$docs_path/arm/cortex-m/cortex-m4/armv7m_arm.pdf"]=1  
+docs["$docs_path/arm/cortex-m/cortex-m4/cortex-m4.pdf"]=1  
+docs["$docs_path/arm/cortex-m/cortex-m4/nucleo-f429zi/board-sch.pdf"]=1  
+docs["$docs_path/arm/cortex-m/cortex-m4/nucleo-f429zi/l-pinout.png"]=1  
+docs["$docs_path/arm/cortex-m/cortex-m4/nucleo-f429zi/r-pinout.png"]=1  
+docs["$docs_path/arm/cortex-m/cortex-m4/nucleo-f429zi/board-um.pdf"]=1  
+docs["$docs_path/arm/cortex-m/cortex-m4/nucleo-f429zi/mcu-datasheet.pdf"]=1  
+docs["$docs_path/arm/cortex-m/cortex-m4/nucleo-f429zi/mcu-rm.pdf"]=1  
+docs["$docs_path/arm/cortex-m/cortex-m4/nucleo-f429zi/mcu-errata.pdf"]=1  
+
+# NOTE(Ryan): This is arbitrary to allow okular instances to attach
+readonly sleep_amt=.3
+
+for key in "${!docs[@]}"; do
+  okular "$key" --page "${docs[$key]}" &
+  sleep $sleep_amt 
+done
