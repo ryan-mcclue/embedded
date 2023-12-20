@@ -1,201 +1,17 @@
-event-driven/interrupt or polling for networking?
-https://github.com/icopy-site/awesome/blob/master/docs/awesome/Awesome-Game-Networking.md?plain=1
+## Multidisciplinary
+Ask EE (possibly in schematic review):
+  * beneficial passive components
+  * more test points, e.g. copper pads, brass loops
+  * verifying MCU/peripherals are similar to what was used on dev-kit,
+  * ask about input ranges like what voltage ranges do I expect for ADC?
+  * Also, can discuss things that might be inexpensive in hardware, but expensive in software
+    Feedback on PCB design could be using I2C over SPI in relation to number of wires?
 
-Networking Chapter in the book Hacking The Art of Exploitation
+  More frequent use of state machines as event-driven (most likely Mealy as use current state and input)
 
-stack overflow
-https://interrupt.memfault.com/blog/using-psp-msp-limit-registers-for-stack-overflow?utm_campaign=Interrupt%20Blog&utm_medium=email&_hsmi=246134749&_hsenc=p2ANqtz--I2uVI5cNVGZRNMBVa87mOqpftnauUZVi8uvJSgdu9TVrGvJiMZDdsBHLle-dL_UM2DSZoe_VmK-dbq_Np1qg9Gd2_Xg&utm_content=246134749&utm_source=hs_email
-
-in uefi:
-- can set fan speed based on temperature
-- other frequencies to auto; inspect ram slot details; on-board leds etc.
-- set cpu overclock, e.g. 3.8GHz to 4GHz
-in grub can run memtest:
-- notice that having 8 sticks of ram at manufacturer recommended 3GHz does gives error in test 7, so set to 2.9GHz
-
-mandelbrot vanilla benchmarking?
-$(/usr/bin/time povray) for benchmarking
-run this on side (lm-sensors): https://superuser.com/questions/25176/how-can-i-monitor-the-cpu-temperature-under-linux
-
-
-# Final Project (for employer)
-YOU WANT TO TALK ABOUT THIS IN AN INTERVIEW
-TODO: using an IMU to add tilt/interactivity responses, i.e. transform interface to component
-TODO: look at classmates project github   
-TODO: (if in car require wide temperature ranges, if outerspace require radiation hardening)
-
-MCU parametric selection using microchip/maps
-"I need the cheapest part I can get, for multiple 10K unit production runs with one SPI bus, one I2S  bus, DMA channels and a handful of GPIOs 
-with at least one ADC input. QSPI / SDIO is a nice to have, but I can get by with regular SPI if necessary."
-* I2S most obscure so select first
-* counting IO pins of protocols gives minimum
-* if looking for cheap, probably have low number of pins overall so set max. pin count
-(remove 'future' devices to not show unlisted prices)
-* add to side-by-side, e.g. cheapest might be MIPS, so compare with say ARM
-
-
-TODO: when at company, ask how their software development process aligns with waterfall/agile stages
-
-unfortunately no strict commonality using an IDE or compiler make system with embedded.
-lots of projects different
-
-step-by-step debugger only possible if chip exposes SWD.
-so no feather boards?
-
-linker and map file related?
-
-open-source software with embedded, e.g. openOCD ICD
-
-(a) Use a Cortex-M processor
-(b) Have a button that causes an interrupt
-(c) Use at least three peripherals such as ADC, DAC, PWM LED, Smart LED, LCD,
-sensor, BLE
-(d) Have serial port output
-(e) Implement an algorithmic piece that makes the system interesting
-(f) Implement a state machine
-
-Bonus points are available by including one of these (include graphs):
-● An analysis of the power used in the system (expected vs actual)
-● Implementation of firmware update with a description in the report of how it works
-● A description of profiling the system to make it run faster
-
-(a) Video of the system working as intended (link to mp4 or youtube)
-(b) Write up of the system (PDF or Google docs report).
-(c) Link to the code
-
-The written part of the assignment is an introduction to the system for another programmer. The
-write up should include:
-● Application description
-● Hardware description
-● Software description
-○ Describe the code in general
-○ Describe the parts you wrote in some detail (maybe 3-5 sentences per module)
-○ Describe code you re-used from other sources, including the licenses for those
-● Diagram(s) of the architecture
-● Build instructions
-○ How to build the system (including the toolchain(s))
-■ Hardware
-■ Software
-○ How you debugged and tested the system
-● Future
-How long would the device last on a battery? What could you do to make it last longer?
-○ What would be needed to get this project ready for production?
-○ How would you extend this project to do something more? Are there other
-features you’d like? How would you go about adding them?
-
-only compile gcc from scratch if wanting to link to specific version of libc on embedded linux
-
-# Week 1
- ## Differentiation
- embedded developers only really concerned with active components not passive?
-
- Look at schematics to get overview of peripherals on board MCU talks with
- Also, schematic review will be done at some stage during development, so what to be able to 
- talk with EE about say putting more test points on (could just be copper pads (for oscilloscope could solder on a brass loop)), 
- verifying MCU/peripherals are similar to what was used on dev-kit,
- ask about input ranges like what voltage ranges do I expect for ADC?
- Also, can discuss things that might be inexpensive in hardware, but expensive in software
-
- Even without RTOS, still have a timer subsystem and separation of tasks, which is backbone of RTOS
- 
- Feedback on PCB design could be using I2C over SPI in relation to number of wires?
-
- TODO(Ryan): How does manufacturing software work, e.g. software to coordinate flashing of 1000s of boards
-
- Fundamentally cool to create devices that interact with world and not just screens 
-
- Embedded system special-purpose (generally systems are resource constrained for manufacturing cheapness, or less power usage). 
- More restrictions/constraints in software (deterministic, real time), 
- hardware (speed, code, ram), debugging (limited hardware breakpoint timing errors), 
- mass deployment/maintanence
-
- Learning a new MCU is like a new programming language
- DSP used to be discrete chip, now MCU functinality
-
- Embedded systems is a team sport of EE and software. So, most come from either background.
- Will always be lacking some knowledge, but need basics of EE in my case
- Could be bug in software or hardware (power supply failing, failed to get cpu errata).
- Therefore, most embedded systems difficult as you often only know half
- Embedded systems interact with our world, not just our screens
-
- IMPORTANT(Ryan): In addition to being accessed elsewhere (interrupt handler, thread), 
- volatile also indicates accessing something elsewhere (e.g. memory-mapped)
- * schematic reading (larger component first. mcu name, family, memory from name)
- * if having to register-work, use struct cast
- * bugs not just in domain of software. however, best to assume software, then build a case for hardware, e.g. errata, solder glob, psu failing etc. 
-   (necesity of HIL to reveal hardware issues?)
-   (in fact, any free time should be spent on HIL tests?)
-   (TODO: how exactly to write tests to verify hardware is functional)
-   Issue with embedded testing is that there is so many ways to test, e.g. simulator, unit, hardware
-   debugging thoughts -> how to isolate system first -> has power? -> timing correct? 
- * many embedded systems designed less than optimally, as often have to wait for hardware to be ready, resulting in software quality time getting squeezed
-   (e.g. may have to implement software workarounds for things that should be in hardware)
-
-   often have 2 hardware breakpoint units (called "watchpoint units" in ARM's documentation)
-   software breakpoint requires modification of code to insert breakpoint instruction
-
-   Have code cross compile for M0+ and M4, as supporting product line, not just one product
-   Using multiple compilers when writing different libraries, or even a library/driver may be written for one
-
-  logiic analyser for communication packets
-  mutlimeter continuity
-  how long function takes --> set GPIO line high when in function --> time signal in oscilloscope (so oscilloscope often used to verify timing)
-  IMPORTANT: could take several lines together and send out on a DAC to combine into a single signal for easier viewing
-  (so, some soldering might be required when connecting wire to IO line on a PCB board, i.e. not demo board)
-  IMPORTANT: major factor in embedded is having ability to test things easily
-  so, IO line if want to reduce timing overhead
-  IMPORTANT: want MCU that exposes JTAG/SWD pins for debugger  
-
-  component selection is capabilities and then what environment for these components
-
-  Design more pre-planning for embedded. 
-(notably hardware block diagrams. 
- so, important to know what protocols used for what common peripherals)
-  This is because hardware is involved 
-  However, diagrams are just for your own understanding 
-
-  Is more waterfall (in reality a spiral waterfall, i.e ability to go back) as we have to deal with hardware, 
-  and can't magically get new boards every 2 weeks like in agile.
-  (so, maybe agile for software, but waterfall for the project as a whole?)
-
-  dev prototype is basically stm32 discovery board and breadboard sensors
-  actual product will progress from a layout to a gerber file to pcb. 
-  once is this state, that is when alpha/beta etc. releases are done  
-
-  Error handling strategy important upfront
-  Long-term sensors --> graceful degradation
-  Medical applicances --> fail immediately
-  Having an error logging system is essential!
-  IMPORTANT: THESE ARE FEATURES THAT ARE PLANNED UP-FRONT FOR EMBEDDED (DIFFERING TO DESKTOP DEVELOPMENT)
-
-  Example diagram: 
-  https://lucid.app/lucidchart/4877b417-3928-4946-93e2-d6ea91f1451f/edit?beaconFlowId=D87AD983CE11B92D&invitationId=inv_ef9f17ee-abfa-42e3-9069-208d3af34b56&page=0_0#
-
-  More frequent use of state machines? moorly vs mealy state machines?
-
-  Difference between shipping a few devices and a million devices
-
-  PSoC is type of MCU made by Cypress where some peripherals can be programmable from software like in a FPGA? 
-
-  Read book than watch lecture
-
-
- ## Schematics
- Schematic first. Larger component, generally more important
+ Using these hardware tools to debug are important so as to give EE sufficient information (we are part of an interdisciplinary team)
 
 # Week 2
- ## Testing
-  Ability to decompose existing system, required when joining a new job
-  So, know how to draw basic hardware block diagrams
-  Also, know the software high-level, e.g. I2C reads from IMU to 'maintain stability'
-  This understanding of the hierarchy of control in software comes with developing software
-  Often in embedded, matter of delegating/comprising priorities between various subsystems
-  (in essence, interviewer looking for understanding of hardware/software modularisation/encapsulation/coupling etc.)
-  (although I believe inferior to coding, it's not about diagramming persa, attempting to design)
-  (most things in software are complex; manage complexity inside module)
-  (HAL is example of adapter pattern, i.e. adapts higher level application code to lower level hardware)
-  (look for possible design patterns in company code)
-
   The startup.s file vector table are similar across CPU families, e.g. cortex-m mostly named the same
   state: thumb state or debug state (when processor halted)
   mode: thread mode (can use shadowed stack pointer), handler mode 
@@ -208,63 +24,29 @@ only compile gcc from scratch if wanting to link to specific version of libc on 
   STM32 max. voltage of 3.6V
   Just like USB 5V regulator required, attach 3.3V regulator to LiPo
 
-  NOTE: regulator will try and maintain voltage
   ADC reads voltage, however to ensure within limit, attach to a voltage divider with high resistor values to keep current low
   However, less current means longer sampling time on ADC, so 2 100K resistors balance
-
-  Another more complex circuit if wanting to incoporate say USB battery charging
-  Use something like MCP73831 linear charge management controller
 
   Common in industry is have separate chips for purposes, e.g. IMU, RF transceiver.
   A single chip is often more expensive to develop/maintain and less fault tolerant if one of its susbsystems fails
 
-  During dev kit phase, creating a debugging toolchain and 
-  testing framework (more tests for more 'riskier' parts) is essential
-  Have standard unit/integration tests and 
-   POST (power-on-self-tests) which run every time on board power-up
-  (probably command console also)
-  TODO: POSTS tests like checking battery level, RAM R/W, CRC check? 
-
-  Something like HM-10 bluetooth dongle actually has its own MCU that you could program
-
   In fact fastest possible is USB. If enough pins, SPI as simpler than I2C
-  I2C and SPI are implemented on a case-by-case basis by looking at datasheet?
 
-  for UI, text rendering: https://faultlore.com/blah/text-hates-you/ 
-
-  Another reason for not using C in startup.s is that an optimising compiler might vectorise loop when FPU has not been enabled
-
-  TODO: Connecting to IoT. Thingspeak, RabbitMQ, OPC ... Why not just custom protocol and server like a game server?
- 
  Circuit simulators:
    * (simple circuits) https://www.falstad.com/circuit/circuitjs.html
    * (complex circuits; manufacturers provide SPICE models of components?) https://www.analog.com/en/design-center/design-tools-and-calculators/ltspice-simulator.html  
  Button debouncing: https://hackaday.com/2015/12/09/embed-with-elliot-debounce-your-noisy-buttons-part-i/
- Useful serial oscilloscope tool, windows: https://x-io.co.uk/serial-oscilloscope/  
- plantuml.com for code generating diagrams
 
-  code: led triggered by button with interrupt and debouncing (with timer or hardware debouncer?)
   want to debounce say no more than 10Hz to achieve an approx. 16ms user response?
  
   interrupts can be disabled (at this time all further ISRs are pending and resolved based on priority) when in ISR and reenabled on exit.
   
-  displays are commonly used in embedded systems that are not battery operated as consume a lot of power
-
-
-  If something affecting system timing too much perhaps only run in the sleep duty cycle 
-  (which is often 90% in battery powered devices) 
-  so as to not affect system timing
-
-
 about power investigation: 
 https://twitter.com/josecastillo/status/1491897251148533769
 https://twitter.com/josecastillo/status/1492883606854942727?t=Wlj1lyg3WgWpewxXkvFPOw&s=19
 EVAL-ADuM4160EBZ + PPK2
 
-ground loop is essentially multiple grounds instead of one, leading to extraneous current flow as it could go to either one
 
-
- Arduino not suitable for industry (overpriced, library licensing issues, only printf debugging)  
  gerber -> PCB -> PCBA (components attached)
  On unknown schematic, internet search for chips with most connections
  Take note of title block (typically on bottom right) on schematic. 
@@ -277,9 +59,6 @@ ground loop is essentially multiple grounds instead of one, leading to extraneou
  Always check the ERRATA for your mcu/cpu/peripherals to verify source of bug.
 
 SPI flash erase byte is 0xff? Can only set by sectors?
-
- Using these hardware tools to debug are important so as to give EE sufficient information (we are part of an interdisciplinary team)
- Dev boards typically have jumpers for voltmeter
 
 
  If stuck, looking at similar open source drivers to see how they configured bus is useful
