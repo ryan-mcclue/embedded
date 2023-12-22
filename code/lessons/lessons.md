@@ -1,74 +1,7 @@
-## Multidisciplinary
-Ask EE (possibly in schematic review):
-  * beneficial passive components
-  * more test points, e.g. copper pads, brass loops
-  * verifying MCU/peripherals are similar to what was used on dev-kit,
-  * ask about input ranges like what voltage ranges do I expect for ADC?
-  * Also, can discuss things that might be inexpensive in hardware, but expensive in software
-    Feedback on PCB design could be using I2C over SPI in relation to number of wires?
-
-  More frequent use of state machines as event-driven (most likely Mealy as use current state and input)
-
- Using these hardware tools to debug are important so as to give EE sufficient information (we are part of an interdisciplinary team)
-
 # Week 2
-  The startup.s file vector table are similar across CPU families, e.g. cortex-m mostly named the same
-  state: thumb state or debug state (when processor halted)
-  mode: thread mode (can use shadowed stack pointer), handler mode 
-  access level: priveleged/unpriveleged (access all memory regions and perform all operations)
-  State -> mode -> access level
-  (can only go from unpriveleged to priveleged via interrupt)
-
-  Incoporating a battery involves creation of some additional circuitry (up to 3?)
-  LiPo say has charge rating of 4.2V
-  STM32 max. voltage of 3.6V
-  Just like USB 5V regulator required, attach 3.3V regulator to LiPo
-
-  ADC reads voltage, however to ensure within limit, attach to a voltage divider with high resistor values to keep current low
-  However, less current means longer sampling time on ADC, so 2 100K resistors balance
-
-  Common in industry is have separate chips for purposes, e.g. IMU, RF transceiver.
-  A single chip is often more expensive to develop/maintain and less fault tolerant if one of its susbsystems fails
-
-  In fact fastest possible is USB. If enough pins, SPI as simpler than I2C
-
- Circuit simulators:
-   * (simple circuits) https://www.falstad.com/circuit/circuitjs.html
-   * (complex circuits; manufacturers provide SPICE models of components?) https://www.analog.com/en/design-center/design-tools-and-calculators/ltspice-simulator.html  
- Button debouncing: https://hackaday.com/2015/12/09/embed-with-elliot-debounce-your-noisy-buttons-part-i/
-
-  want to debounce say no more than 10Hz to achieve an approx. 16ms user response?
- 
-  interrupts can be disabled (at this time all further ISRs are pending and resolved based on priority) when in ISR and reenabled on exit.
-  
-about power investigation: 
-https://twitter.com/josecastillo/status/1491897251148533769
-https://twitter.com/josecastillo/status/1492883606854942727?t=Wlj1lyg3WgWpewxXkvFPOw&s=19
-EVAL-ADuM4160EBZ + PPK2
-
-
- gerber -> PCB -> PCBA (components attached)
- On unknown schematic, internet search for chips with most connections
- Take note of title block (typically on bottom right) on schematic. 
- First page will typically be a blow-out/legend for subsequent pages. 
- Useful for looking into electrical diagrams of board components, e.g. mcu pins that are pull-up (will read 1 by default), peripherals (leds to resistors, etc.), st-link, audio, etc.
- IMPORTANT: Pull-up and pull-down pins may be off to the side in a schematic 
- ST-LINK is itself an STM32 mcu
- How does ESD affect the chip?
- Is EEPROM the same as flash? (EEPROM write bytes more power, flash sector)
- Always check the ERRATA for your mcu/cpu/peripherals to verify source of bug.
-
-SPI flash erase byte is 0xff? Can only set by sectors?
-
-
- If stuck, looking at similar open source drivers to see how they configured bus is useful
- (adafruit, sparkfun, mbed?)
-
- what happens before main() is more interesting for embedded, as it various across each MCU.
  cortex-m defines the placement of vector tables at address 0x04 etc.
  (better to use ARM assembly syntax as common across driver files)
  in startup file will define interrupt handlers as [WEAK] so as to provide a fallback definition
- Best to use assembly for startup code as if using C, compiler optimisations might auto-vectorise which may use FPU registers which may not be initialised yet 
  However, what would be common is that .data are copied to RAM and .bss initialised to 0
  (this becomes more involved with C++ class initialisers)
 
@@ -120,7 +53,7 @@ SPI flash erase byte is 0xff? Can only set by sectors?
   // E.g. 42MHz in, divide by 42000 (in range of 16bit) gives 1000Hz. Then count to 1000
   // A formula for calculating this will often be given (update event period)
 
-  ## Week 3
+## Week 3
   Documentation:
   TODO: be able to read timing diagrams better (e.g. peripheral driver)
 
