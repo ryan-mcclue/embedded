@@ -15,6 +15,7 @@
 // gcc --Wl,--wrap=func; now have __wrap_func() and __real_func()
 
 // boundary testing is putting in small, large numbers etc.
+
 // system tests (automated or manual) is used to catch bugs (other testing is to prevent them).
 // in essence, verify requirements are met in reality
 

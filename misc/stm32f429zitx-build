@@ -28,7 +28,7 @@ print_flash_usage() {
   flash_usage=$(( 100 * $flash_size / $max_flash_size )) 
 
   printf "Flash usage: %d / %d (%d%%)\n" $flash_size $max_flash_size $flash_usage
-  }
+}
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
   build_os="linux"
@@ -169,12 +169,6 @@ if [[ "$param_arch" == "arm" && "$param_compiler" == "arm-none-eabi-gcc" && "$pa
   # 
 
   LINKER_FLAGS+=( "-Wl,--build-id" )
-  # IMPORTANT(Ryan): For embedded linker script (as objcopy only LOAD):
-  # .gnu_build_id: 
-  # {
-  #   PROVIDE(g_note_build_id = .); (provide symbol)
-  #   *(.note.gnu.build-id)
-  # } > rom
 
   if [[ "$param_mode" == "debug" ]]; then
     common_debug_flags=( "-Wno-unused-function" "-Wno-unused-variable"  "-Wno-unused-but-set-variable" "-Wno-unused-parameter" "-Wno-unused-result" )

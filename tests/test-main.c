@@ -268,8 +268,6 @@ test_should_ignore_unknown_messages(void)
   expect_any(check_for_msg, msg);
 }
 
-// TODO(Ryan): Confused with USB-3 and UART. If can only send one byte at a time, how faster?
-// All embedded serial ports are UART, so slower than USB-3 protocol on desktops?
 void
 test_should_read(void)
 {
