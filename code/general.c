@@ -411,9 +411,12 @@ uint8_t TM_CPULOAD_GoToSleepMode(TM_CPULOAD_t* CPU_Load) {
 void main(void)
 {
 /*
- *What do you want to do with "other interrupts"? If you are planning to sleep until one specific interrupt occurs, then you should simply disable all other interrupts, execute WFI and then re-enable everything when you wake up.
+ *What do you want to do with "other interrupts"? 
+ If you are planning to sleep until one specific interrupt occurs, then you should simply disable all other interrupts, 
+ execute WFI and then re-enable everything when you wake up.
  */
-  // __ISB
+
+  // unit testing
   // https://chiselapp.com/user/mangoa01/repository/bottom-up/uv/docs/book/micro_bottom_up.pdf
 
 	while (1) {
