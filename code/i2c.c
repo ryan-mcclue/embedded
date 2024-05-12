@@ -1,14 +1,11 @@
 // SPDX-License-Identifier: zlib-acknowledgement
 
-// drivers: uart, dio, timer (wrap HAL_GetTick()), i2c 
-// these have the stm32 file name prefix
-// also, they contain the HAL specific 'handles/ports/bases'
-// independent code references these: gps, temperature, console, stat, blinky, log
+// source current would set pin to high
 
-// register level driver (can still use HAL register API)
-// 
-// CAN and UART bus length a lot longer
-// SPI requires one dedicated signal for each device
+// open-drain: output mode. only actively set to low. set high with pull-up resistor  
+// used for multiple devices on same line
+// push-pull: can actively set high and low 
+
 
 // I2C has built-in error detection (SPI, some can go unnoticed)
 // I2C does message framing (unlike UART)
@@ -228,14 +225,7 @@ i2c_interrupt()
               st->msg_bytes_xferred, sr1);
 
     // for state machines, add code to advance to next state
-    // informal state machine uses switch statements?
-    // a formal state machine uses tables and forces you to think about all states?
 }
-
-// most module requirements are to do background sampling, i.e. interrupt
-
-// typical to get latest sample value, and not actually get sensor value on demand?
-// this is because more energy efficient as the sensor can read value and store, then go back to sleep?
 
 // TODO(Ryan): common sensor terms: accuracy, precision, repeatability etc.
 
@@ -244,23 +234,15 @@ i2c_interrupt()
 // look for algorithm that instructs how to interpret raw sensor bytes, i.e. convert signal
 // may require reading configuration values from register
 
-// if working with integers, be aware of order of operations in calculations to avoid loss of precision
-
-// if hardware performs CRC, must provide inputs for CRC used? 
-
 // sensor may perform oversampling, i.e. much higher than Nyquist, in order to reduce noise
 // increased oversampling will increase output resolution bits
 
 // look at measurement time, so know how long to wait before actually reading result?
 
-
 // the breakout boards like EEPROM used in dev as has pull-up resistor on it.
 // furthermore, will probably have configurable address pins tied to ground
 // however, when in production probably use EEPROM in DAP package
 
-// with polling, want to know how long takes to reply to put in timeout 
-
-// with DMA, want to know if EEPROM has finished writing before issuing again
 void
 i2c_device_test(void)
 {

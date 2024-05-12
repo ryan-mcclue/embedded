@@ -1,13 +1,5 @@
 // SPDX-License-Identifier: zlib-acknowledgement
 
-// logic analyser to measure time between toggles
-
-// poor mans profiling, i.e. sampler profiling counting cycles 
-// (would require code instrumentation to see what blocking on)
-
-// parsing a collection of debugger backtracers could be used to ascertain main time spent in
-// (however, introducing say GDB has huge overhead)
-
 // ITM cortex-m4 one-way asynchronous transmission through SWO pin via dedicated bus
 // much faster than UART, and larger frame size means less register writes
 // SWO pin may be connected to USB port already if ICDI present on board
@@ -15,8 +7,6 @@
 // (SWO might require solder bridge enabling)
 // ITM sends frames
 // ITM typically used as a printf for logging
-
-// ITM .jdebug script files?
 
 // so, if using SWO printf would just be plain ASCII?
 // ITM implies framing
@@ -43,4 +33,3 @@
 
 // TRACE pins different used with J-Trace?
 // TRACE is multiple pins so faster than single SWO pin of SWD header?
-

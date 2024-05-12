@@ -13,41 +13,6 @@
 // Vdd is voltage for logic operation
 // V0 is adjustable voltage for LCD display (can be GND for stronger lighting?)
 
-
-// DWT (debug watchpoint and trace)
-// HAL_Delay() not accurate, e.g. if 0.8 ticks when called, only 0.2ticks elapsed
-
-// NOTE(Ryan): Already enabled if connected via debugger
-// TODO(Ryan): Investigate code space saved specifying addresses instead of including cmsis
-#define INIT_CYCLE_COUNTER() \
-    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk
-
-#define ENABLE_CYCLE_COUNTER() \
-    DWT->CTRL |=  DWT_CTRL_CYCCNTENA_Msk
-
-#define DISABLE_CYCLE_COUNTER() \
-    DWT->CTRL &=  ~DWT_CTRL_CYCCNTENA_Msk
-
-#define GET_CYCLE_COUNTER() \
-    DWT->CYCCNT
-
-#define RESET_CYCLE_COUNTER() \
-    DWT->CYCCNT = 0
-
-INTERNAL void 
-delay_us(u32 us)
-{
-  u64 start_cycles = GET_CYCLE_COUNTER();
-  u64 cycles_per_us = (SystemCoreClock / 1000000);
-  u64 cycles_to_delay = us * cycles_per_us;
-  while ((GET_CYCLE_COUNTER() - start_cycles) < cycles_to_delay);
-}
-
-// TODO(Ryan): Segger SystemView (https://mcuoneclipse.com/2015/11/16/segger-systemview-realtime-analysis-and-visualization-for-freertos/)
-
-// TODO(Ryan): Understand Systick/RCC more in depth (weeW systick microsecond; matej;)
-// TODO(Ryan): Verify clock signal by measuring GPIO pin toggling frequency
-
 typedef struct LCDInfo LCDInfo;
 struct LCDInfo
 {
@@ -237,24 +202,3 @@ init_lcd1602(LCDInit *init, b32 four_bit)
 
   return result;
 }
-
-  // jlink commanderscript doesn't reset; have to hit reset button (reset strategy 3?)
-
-/*
-   Powering the display and Arduino from different power supplies and getting ground loops that crater everything.
-   IMPORTANT: EVERYTHING MUST SHARE COMMON GROUND, OTHERWISE GET GROUND LOOPS AND WILL SEE NOISY SIGNALS
-   Need to use optoisolator?? Each side of isolator has to be separate power supply?
-
-   When signal frequencies get very high, even a small impedance (resistance, capacitance, or inductance) added to a circuit can affect the signal
-   the probe you use may have to help compensate for it.
-
-   Oscilloscope probes add resistive, capacitive, and inductive loads to your circuit. 
-   oscilloscope has better handling than logic probe?
-
-   When signal frequencies get high, 
-   Adding a logic analyser probe increases capacitance and inductance of wire?
-   So, it causes ringing and reflections? Add a 100Ohm resistor to probe to negate this?
-   The goal is to damp any ringing/reflections caused by the probe.
-
-   Decoupling capacitor for noise on breadboard power rails?
- */

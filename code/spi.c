@@ -269,5 +269,3 @@ spi_tx_callback_int(void)
 {
   global_display_busy_dma = 0;
 }
-
-// https://youtu.be/H_5QQQnP0zg?list=PLtVUYRe-Z-mcjXXFBte61L8SjyI377VNq&t=1160
